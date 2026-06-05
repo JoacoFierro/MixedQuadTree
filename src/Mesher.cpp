@@ -75,7 +75,11 @@ namespace Clobscode
         //split Quadrants until the refinement level (rl) is achieved.
         //The output will be a one-irregular mesh.
         splitQuadrants(rl,input,roctli,all_reg,name,minrl,omaxrl,debugging);
-        
+
+        // compute volume fractions using winding numbers with s x s samples
+        mSampleSize = 4; // default sample size (s=4 means 4x4 grid)
+        computeVolumeFractions(input, mSampleSize);
+
         //Save the Octant mesh for further refinement.
         Services::WriteQuadtreeMesh(name,points,Quadrants,MapEdges,gt);
         //Some Quads will be then removed due to proximity with the surface.
@@ -214,7 +218,11 @@ namespace Clobscode
         //an existing mesh, this value may change.
         //The output will be a one-irregular mesh.
         generateQuadtreeMesh(rl,input,all_reg,name,0,debugging,Quadrants.size());
-        
+
+        // compute volume fractions using winding numbers with s x s samples
+        mSampleSize = 4; // default sample size (s=4 means 4x4 grid)
+        computeVolumeFractions(input, mSampleSize);
+
         Services::WriteQuadtreeMesh(name,points,Quadrants,MapEdges,gt);
         //Some Quads will be then removed due to proximity with the surface.
         //However we must preserve them if the oct mesh to avoid congruency
@@ -1676,11 +1684,40 @@ namespace Clobscode
                 p.updateMaxDistance(Quadrants[e].getMaxDistance());
             }
         }
+}
+
+    //--------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------------
+
+    void Mesher::computeVolumeFractions(Polyline &input, unsigned int sampleSize)
+    {
+        auto start_time = chrono::high_resolution_clock::now();
+
+        WindingNumberVisitor wnv(sampleSize);
+        wnv.setPolyline(&input);
+        wnv.setPoints(&points);
+
+        for (auto& q : Quadrants) {
+            q.accept(&wnv);
+        }
+
+#if (VTKOUT==true)
+        {
+            string tmp_name = "volume_fraction_debug";
+            VolumeFractionVTKWriter::writeQuadTreeWithVF(tmp_name, Quadrants, points, input);
+            VolumeFractionVTKWriter::writeVFHeatmap(tmp_name, Quadrants, points);
+        }
+#endif
+
+        auto end_time = chrono::high_resolution_clock::now();
+        cout << "    * computeVolumeFractions (s=" << sampleSize << ") in "
+             << std::chrono::duration_cast<chrono::milliseconds>(end_time-start_time).count();
+        cout << " ms" << endl;
     }
-    
+
     //--------------------------------------------------------------------------------
     //--------------------------------------------------------------------------------
-    
+
     void Mesher::detectInsideNodes(Polyline &input){
         auto start_time = chrono::high_resolution_clock::now();
         

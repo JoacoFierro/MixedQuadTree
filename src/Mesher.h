@@ -43,6 +43,8 @@
 #include "Visitors/RemoveSubElementsVisitor.h"
 #include "Visitors/EdgeVisitor.h"
 #include "Visitors/OneIrregularVisitor.h"
+#include "Visitors/WindingNumberVisitor.h"
+#include "Visualization/VolumeFractionVTKWriter.h"
 
 #include <list>
 #include <vector>
@@ -60,7 +62,7 @@ using Clobscode::QuadEdge;
 using Clobscode::Polyline;
 using Clobscode::RefinementRegion;
 
-#define VTKOUT false //CL Debbuging
+#define VTKOUT true //CL Debbuging
 
 namespace Clobscode
 {
@@ -115,7 +117,9 @@ namespace Clobscode
                                               const string &name);*/
 		
         virtual void generateGridMesh(Polyline &input);
-        
+
+        virtual void computeVolumeFractions(Polyline &input, unsigned int sampleSize);
+
         virtual void detectFeatureQuadrants(Polyline &input);
 		
         virtual void linkElementsToNodes();
@@ -158,6 +162,8 @@ namespace Clobscode
         //Map that for each edge saves its mid point index (0 by default).
         map<QuadEdge, EdgeInfo> MapEdges;
 		list<RefinementRegion *> regions;
+
+        unsigned int mSampleSize;
 
 
 

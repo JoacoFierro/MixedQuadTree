@@ -15,17 +15,19 @@ endif()
 
 set(SOURCE_FILES Main
         Point3D Polyline PolyEdge  Quadrant QuadEdge EdgeInfo
-	QuadTransition QuadSurfTemplate 
+	QuadTransition QuadSurfTemplate
         Mesher GridMesher MeshPoint
 	RefinementRegion RefinementFunctionRegion RefinementCubeRegion RefinementSurfaceRegion
 	RefinementInputSurfaceRegion RefinementAllRegion RefinementBoundaryRegion RefinementDrawingRegion
         GeometricTransform Services
-        Visitors/Visitor Visitors/SplitVisitor  
+        Visitors/Visitor Visitors/SplitVisitor
 	Visitors/IntersectionsVisitor
-        Visitors/TransitionPatternVisitor 
+        Visitors/TransitionPatternVisitor
 	Visitors/SurfaceTemplatesVisitor
         Visitors/RemoveSubElementsVisitor
 	Visitors/EdgeVisitor
+	Visitors/WindingNumberVisitor
+	Visualization/VolumeFractionVTKWriter
 	#For debuggin
         Visitors/OneIrregularVisitor
         )

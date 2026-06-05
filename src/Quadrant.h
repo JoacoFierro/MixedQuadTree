@@ -60,6 +60,7 @@ namespace Clobscode
         friend class TransitionPatternVisitor;
         friend class SurfaceTemplatesVisitor;
         friend class RemoveSubElementsVisitor;
+        friend class WindingNumberVisitor;
 
 	public:
 		
@@ -119,8 +120,22 @@ namespace Clobscode
         //virtual const bool &isInRegion();
         
         virtual const unsigned int&getIndex();
-        
-        
+
+        /***** BEGIN Volume Fraction methods *******/
+        virtual void setSampleSize(unsigned int s);
+        virtual unsigned int getSampleSize() const;
+        virtual void computeVolumeFraction(const vector<double>& windingNumbers);
+        virtual double getVolumeFraction() const;
+        virtual const vector<double>& getWindingNumbers() const;
+        virtual bool hasVolumeFraction() const;
+        virtual void setChildren(vector<Quadrant*>& children);
+        virtual const vector<Quadrant*>& getChildren() const;
+        virtual void inheritFromChildren();
+        virtual Point3D getSamplePoint(unsigned int i, unsigned int j,
+                                       const vector<MeshPoint>& mp) const;
+        /***** END Volume Fraction methods *******/
+
+
         /***** BEGIN Debugging methods *******/
         virtual void setDebugging();
         
@@ -152,6 +167,15 @@ namespace Clobscode
         /***** END Debugging variables *******/
         
 		double max_dis;
+
+        /***** BEGIN Volume Fraction variables *******/
+        unsigned int mSampleSize;
+        vector<double> mWindingNumbers;
+        double mVolumeFraction;
+        bool mHasVolumeFraction;
+        bool mNeedsInheritance;
+        vector<Quadrant*> mChildren;
+        /***** END Volume Fraction variables *******/
 	};
 	
     /***** BEGIN Debugging methods *******/
@@ -309,7 +333,37 @@ namespace Clobscode
     inline const unsigned int&Quadrant::getIndex() {
         return q_id;
     }
-	
+
+    /***** BEGIN Volume Fraction inline methods *******/
+    inline void Quadrant::setSampleSize(unsigned int s) {
+        mSampleSize = s;
+    }
+
+    inline unsigned int Quadrant::getSampleSize() const {
+        return mSampleSize;
+    }
+
+    inline double Quadrant::getVolumeFraction() const {
+        return mVolumeFraction;
+    }
+
+    inline const vector<double>& Quadrant::getWindingNumbers() const {
+        return mWindingNumbers;
+    }
+
+    inline bool Quadrant::hasVolumeFraction() const {
+        return mHasVolumeFraction;
+    }
+
+    inline void Quadrant::setChildren(vector<Quadrant*>& children) {
+        mChildren = children;
+    }
+
+    inline const vector<Quadrant*>& Quadrant::getChildren() const {
+        return mChildren;
+    }
+    /***** END Volume Fraction inline methods *******/
+
     std::ostream& operator<<(ostream& o, const Quadrant &q);
 }
 #endif

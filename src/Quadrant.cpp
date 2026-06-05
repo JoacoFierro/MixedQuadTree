@@ -35,8 +35,10 @@ namespace Clobscode
 	Quadrant::Quadrant(vector<unsigned int> &epts, const unsigned short &ref_level,
                        const unsigned int &q_id)
         :pointindex(epts),ref_level(ref_level),q_id(q_id),
-          surface(false)/*,inregion(false)*/,max_dis(numeric_limits<double>::infinity()) {
-        
+          surface(false)/*,inregion(false)*/,max_dis(numeric_limits<double>::infinity()),
+          mSampleSize(0), mVolumeFraction(0.0), mHasVolumeFraction(false),
+          mNeedsInheritance(false) {
+
         /***** BEGIN Debugging variables *******/
               debugging = false;
         /***** END Debugging variables *******/
@@ -151,5 +153,55 @@ namespace Clobscode
 			o << " " << points[i];
 		return o;
 	}
+
+    //--------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------------
+
+    Point3D Quadrant::getSamplePoint(unsigned int i, unsigned int j,
+                                     const vector<MeshPoint>& mp) const {
+        const Point3D& p0 = mp[pointindex[0]].getPoint();
+        const Point3D& p2 = mp[pointindex[2]].getPoint();
+
+        double minx = p0[0], maxx = p2[0];
+        double miny = p0[1], maxy = p2[1];
+        double cell_size_x = (maxx - minx) / mSampleSize;
+        double cell_size_y = (maxy - miny) / mSampleSize;
+
+        double x = minx + (i + 0.5) * cell_size_x;
+        double y = miny + (j + 0.5) * cell_size_y;
+
+        return Point3D(x, y, 0);
+    }
+
+    //--------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------------
+
+    void Quadrant::computeVolumeFraction(const vector<double>& windingNumbers)
+    {
+        mWindingNumbers = windingNumbers;
+        double sum = 0.0;
+        for (double wn : windingNumbers) {
+            sum += wn;
+        }
+        mVolumeFraction = sum / windingNumbers.size();
+        mHasVolumeFraction = true;
+    }
+
+    //--------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------------
+
+    void Quadrant::inheritFromChildren() {
+        if (mChildren.empty()) return;
+
+        double sum_vf = 0.0;
+        for (auto* child : mChildren) {
+            if (child->hasVolumeFraction()) {
+                sum_vf += child->getVolumeFraction();
+            }
+        }
+        mVolumeFraction = sum_vf / mChildren.size();
+        mHasVolumeFraction = true;
+        mNeedsInheritance = false;
+    }
 
 }
