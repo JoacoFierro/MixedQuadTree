@@ -1696,9 +1696,14 @@ namespace Clobscode
         WindingNumberVisitor wnv(sampleSize);
         wnv.setPolyline(&input);
         wnv.setPoints(&points);
+        wnv.setQuadrants(&Quadrants);
 
         for (auto& q : Quadrants) {
             q.accept(&wnv);
+        }
+
+        for (auto& q : Quadrants) {
+            wnv.computeInheritance(&q);
         }
 
 #if (VTKOUT==true)

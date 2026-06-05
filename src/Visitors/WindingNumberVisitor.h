@@ -27,6 +27,7 @@
 #define WindingNumberVisitor_h
 
 #include "Visitor.h"
+#include "../Quadrant.h"
 #include <vector>
 
 using std::vector;
@@ -35,7 +36,6 @@ namespace Clobscode
 {
     class Polyline;
     class MeshPoint;
-    class Quadrant;
 
     class WindingNumberVisitor : public Visitor
     {
@@ -51,15 +51,23 @@ namespace Clobscode
 
         void setPoints(vector<MeshPoint> *mp);
 
+        void setQuadrants(vector<Quadrant> *quadrants);
+
     private:
 
         void computePostOrder(Quadrant *q);
+
+    public:
+
+        void computeInheritance(Quadrant *q);
 
         unsigned int mSampleSize;
 
         Polyline* mPolyline;
 
         vector<MeshPoint>* mPoints;
+
+        vector<Quadrant>* mQuadrants;
     };
 }
 
