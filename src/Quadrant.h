@@ -128,9 +128,6 @@ namespace Clobscode
         virtual double getVolumeFraction() const;
         virtual const vector<double>& getWindingNumbers() const;
         virtual bool hasVolumeFraction() const;
-        virtual void setChildren(vector<Quadrant*>& children);
-        virtual const vector<Quadrant*>& getChildren() const;
-        virtual void inheritFromChildren();
         virtual Point3D getSamplePoint(unsigned int i, unsigned int j,
                                        const vector<MeshPoint>& mp) const;
         /***** END Volume Fraction methods *******/
@@ -173,8 +170,6 @@ namespace Clobscode
         vector<double> mWindingNumbers;
         double mVolumeFraction;
         bool mHasVolumeFraction;
-        bool mNeedsInheritance;
-        vector<Quadrant*> mChildren;
         /***** END Volume Fraction variables *******/
 	};
 	
@@ -353,14 +348,6 @@ namespace Clobscode
 
     inline bool Quadrant::hasVolumeFraction() const {
         return mHasVolumeFraction;
-    }
-
-    inline void Quadrant::setChildren(vector<Quadrant*>& children) {
-        mChildren = children;
-    }
-
-    inline const vector<Quadrant*>& Quadrant::getChildren() const {
-        return mChildren;
     }
     /***** END Volume Fraction inline methods *******/
 

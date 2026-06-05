@@ -36,8 +36,7 @@ namespace Clobscode
                        const unsigned int &q_id)
         :pointindex(epts),ref_level(ref_level),q_id(q_id),
           surface(false)/*,inregion(false)*/,max_dis(numeric_limits<double>::infinity()),
-          mSampleSize(0), mVolumeFraction(0.0), mHasVolumeFraction(false),
-          mNeedsInheritance(false) {
+          mSampleSize(0), mVolumeFraction(0.0), mHasVolumeFraction(false) {
 
         /***** BEGIN Debugging variables *******/
               debugging = false;
@@ -185,23 +184,6 @@ namespace Clobscode
         }
         mVolumeFraction = sum / windingNumbers.size();
         mHasVolumeFraction = true;
-    }
-
-    //--------------------------------------------------------------------------------
-    //--------------------------------------------------------------------------------
-
-    void Quadrant::inheritFromChildren() {
-        if (mChildren.empty()) return;
-
-        double sum_vf = 0.0;
-        for (auto* child : mChildren) {
-            if (child->hasVolumeFraction()) {
-                sum_vf += child->getVolumeFraction();
-            }
-        }
-        mVolumeFraction = sum_vf / mChildren.size();
-        mHasVolumeFraction = true;
-        mNeedsInheritance = false;
     }
 
 }
