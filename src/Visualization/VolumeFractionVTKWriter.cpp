@@ -135,7 +135,7 @@ namespace Clobscode
                                                  const std::vector<Quadrant>& quadrants,
                                                  const std::vector<MeshPoint>& points)
     {
-        // Esta función escribe los sample points con sus winding numbers
+        // Esta función escribe los centroides de sub_elements con sus winding numbers
         // para visualizar el campo de volume fraction como un heatmap
 
         if (quadrants.empty()) {
@@ -153,46 +153,39 @@ namespace Clobscode
 
         // Header VTK
         fprintf(f, "# vtk DataFile Version 2.0\n");
-        fprintf(f, "Volume Fraction Sample Points Debug Output\n");
+        fprintf(f, "Sub-element Centroids with Winding Numbers Debug Output\n");
         fprintf(f, "ASCII\n\n");
 
-        // Recolectar todos los sample points
-        vector<Point3D> sample_points;
-        vector<double> sample_values;
-
-        unsigned int sample_size = quadrants[0].getSampleSize();
-        if (sample_size == 0) sample_size = 2; // default
+        // Recolectar centroides de todos los sub_elements
+        vector<Point3D> centroids;
+        vector<double> wn_values;
 
         for (const auto& q : quadrants) {
+            const auto& subs = q.getSubElements();
             const auto& wn = q.getWindingNumbers();
-            const Point3D& p0 = points[q.getPointIndex()[0]].getPoint();
-            const Point3D& p2 = points[q.getPointIndex()[2]].getPoint();
 
-            double minx = p0[0], maxx = p2[0];
-            double miny = p0[1], maxy = p2[1];
-            double cell_size_x = (maxx - minx) / sample_size;
-            double cell_size_y = (maxy - miny) / sample_size;
+            for (unsigned int k = 0; k < subs.size(); ++k) {
+                const auto& sub = subs[k];
+                if (sub.size() < 3) continue;
 
-            for (unsigned int i = 0; i < sample_size; i++) {
-                for (unsigned int j = 0; j < sample_size; j++) {
-                    double x = minx + (i + 0.5) * cell_size_x;
-                    double y = miny + (j + 0.5) * cell_size_y;
-                    sample_points.emplace_back(x, y, 0.0);
-
-                    unsigned int idx = i * sample_size + j;
-                    double wn_value = (idx < wn.size()) ? wn[idx] : 0.0;
-                    sample_values.push_back(wn_value);
+                Point3D centroid;
+                for (unsigned int idx : sub) {
+                    centroid += points[idx].getPoint();
                 }
+                centroid /= sub.size();
+
+                centroids.push_back(centroid);
+                wn_values.push_back(wn[k]);
             }
         }
 
-        unsigned int num_points = sample_points.size();
+        unsigned int num_points = centroids.size();
 
         // Escribir puntos
         fprintf(f, "DATASET UNSTRUCTURED_GRID\n");
         fprintf(f, "POINTS %u float\n", num_points);
 
-        for (const auto& p : sample_points) {
+        for (const auto& p : centroids) {
             fprintf(f, "%+1.8E %+1.8E %+1.8E\n", p[0], p[1], p[2]);
         }
 
@@ -212,7 +205,7 @@ namespace Clobscode
         fprintf(f, "\nPOINT_DATA %u\n", num_points);
         fprintf(f, "SCALARS winding_number double 1\n");
         fprintf(f, "LOOKUP_TABLE default\n");
-        for (double v : sample_values) {
+        for (double v : wn_values) {
             fprintf(f, "%+1.8E\n", v);
         }
 

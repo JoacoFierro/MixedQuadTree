@@ -79,6 +79,7 @@ namespace Clobscode
             return;
         }
 
+        vector<double> wn_values;
         double sum_vf = 0.0;
         int count = 0;
 
@@ -94,13 +95,13 @@ namespace Clobscode
             centroid /= sub.size();
 
             double wn = mPolyline->windingNumber(centroid);
+            wn_values.push_back(wn);
             sum_vf += wn;
             count++;
         }
 
         if (count > 0) {
-            q->mVolumeFraction = sum_vf / count;
-            q->mHasVolumeFraction = true;
+            q->computeVolumeFraction(wn_values);
         }
     }
 
