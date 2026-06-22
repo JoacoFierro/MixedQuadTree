@@ -93,6 +93,7 @@ void endMsg(){
     cerr << "    -x save output mesh in GMSH ASCII format (gmsh)\n";
     cerr << "    -i save output mesh in MVM ASCII format (mvm)\n";
     cerr << "    -o save output mesh in OFF ASCII format (off)\n";
+    cerr << "    -n Sample grid size for winding numbers (e.g., -n 2 for 2x2 grid)\n";
 }
 
 //-------------------------------------------------------------------
@@ -132,6 +133,7 @@ int main(int argc,char** argv){
     bool decoration=false; //if supported, write quality attributes to output file
     bool region_ref = false;//to write region refinement in vtk format
     bool debugging = false;
+    unsigned int mSampleSize = 2;
     
     //for reading an Quadrant mesh as starting point.
     vector<MeshPoint> oct_points;
@@ -343,6 +345,10 @@ int main(int argc,char** argv){
             case 'e':
                 debugging = true;
                 break;
+            case 'n':
+                mSampleSize = atoi(argv[i+1]);
+                i++;
+                break;
             default:
                 cerr << "Warning: unknown option " << argv[i] << " skipping\n";
                 break;
@@ -391,7 +397,7 @@ int main(int argc,char** argv){
     // and next proceed with mesh generation or refinement
     if (!Quadrant_start) {
 
-        output = mesher.generateMesh(inputs.at(0),ref_level,out_name,all_regions,debugging,decoration);
+        output = mesher.generateMesh(inputs.at(0),ref_level,out_name,all_regions,debugging,mSampleSize,decoration);
     }
     else {
         mesher.setInitialState(oct_points,oct_Quadrants,oct_edges);
@@ -399,7 +405,7 @@ int main(int argc,char** argv){
             omaxrl = ref_level;
         }
         output = mesher.refineMesh(inputs.at(0),ref_level,out_name,roctli,all_regions,gt,
-                                   cminrl,omaxrl,debugging,decoration);
+                                   cminrl,omaxrl,debugging,mSampleSize,decoration);
     }
     
     auto gen_time = chrono::high_resolution_clock::now();

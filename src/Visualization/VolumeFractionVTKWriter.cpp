@@ -153,29 +153,24 @@ namespace Clobscode
 
         // Header VTK
         fprintf(f, "# vtk DataFile Version 2.0\n");
-        fprintf(f, "Sub-element Centroids with Winding Numbers Debug Output\n");
+        fprintf(f, "s×s Grid Sample Points with Winding Numbers Debug Output\n");
         fprintf(f, "ASCII\n\n");
 
-        // Recolectar centroides de todos los sub_elements
+        // Recolectar puntos de la grilla s×s de cada cuadrante
         vector<Point3D> centroids;
         vector<double> wn_values;
 
         for (const auto& q : quadrants) {
-            const auto& subs = q.getSubElements();
+            unsigned int s = q.getSampleSize();
             const auto& wn = q.getWindingNumbers();
 
-            for (unsigned int k = 0; k < subs.size(); ++k) {
-                const auto& sub = subs[k];
-                if (sub.size() < 3) continue;
-
-                Point3D centroid;
-                for (unsigned int idx : sub) {
-                    centroid += points[idx].getPoint();
+            for (unsigned int i = 0; i < s; ++i) {
+                for (unsigned int j = 0; j < s; ++j) {
+                    Point3D sample = q.getSamplePoint(i, j, points);
+                    centroids.push_back(sample);
+                    unsigned int idx = i * s + j;
+                    wn_values.push_back(wn[idx]);
                 }
-                centroid /= sub.size();
-
-                centroids.push_back(centroid);
-                wn_values.push_back(wn[k]);
             }
         }
 

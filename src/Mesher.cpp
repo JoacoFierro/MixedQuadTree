@@ -50,7 +50,8 @@ namespace Clobscode
                                                GeometricTransform &gt,
                                                const unsigned short &minrl,
                                                const unsigned short &omaxrl,
-                                               const bool &debugging, bool decoration){
+                                               const bool &debugging, unsigned int sampleSize,
+                                               bool decoration){
         
         //Note: rotation are not enabled when refining an already produced mesh.
         bool rotated = !gt.Default();
@@ -77,7 +78,7 @@ namespace Clobscode
         splitQuadrants(rl,input,roctli,all_reg,name,minrl,omaxrl,debugging);
 
         // compute volume fractions using winding numbers with s x s samples
-        mSampleSize = 4; // default sample size (s=4 means 4x4 grid)
+        mSampleSize = sampleSize;
         computeVolumeFractions(input, mSampleSize);
 
         //Save the Octant mesh for further refinement.
@@ -139,20 +140,18 @@ namespace Clobscode
 #endif
 
         //shrink outside nodes to the input domain boundary
-        shrinkToBoundary(input);
+        //[DISABLED] shrinkToBoundary(input);
         
 #if (VTKOUT==true)        //CL Debbuging
-        {
-            //save pure octree mesh
-            std::shared_ptr<FEMesh> shrink_octree=make_shared<FEMesh>();
-            saveOutputMesh(shrink_octree,points,Quadrants);
-            string tmp_name = name + "_shrink";
-            Services::WriteVTK(tmp_name,shrink_octree);
-        }
+        //[DISABLED]
+        //    std::shared_ptr<FEMesh> shrink_octree=make_shared<FEMesh>();
+        //    saveOutputMesh(shrink_octree,points,Quadrants);
+        //    string tmp_name = name + "_shrink";
+        //    Services::WriteVTK(tmp_name,shrink_octree);
 #endif
 
         //apply the surface Patterns
-        applySurfacePatterns(input);
+        //[DISABLED] applySurfacePatterns(input);
         //removeOnSurface(input);
         
         if (rotated) {
@@ -189,7 +188,8 @@ namespace Clobscode
     std::shared_ptr<FEMesh> Mesher::generateMesh(Polyline &input, const unsigned short &rl,
                                                  const string &name,
                                                  list<RefinementRegion *> &all_reg,
-                                                 const bool &debugging, bool decoration){
+                                                 const bool &debugging, unsigned int sampleSize,
+                                                 bool decoration){
         
         //ATTENTION: geometric transform causes invalid input rotation when the
         //input is a cube.
@@ -220,7 +220,7 @@ namespace Clobscode
         generateQuadtreeMesh(rl,input,all_reg,name,0,debugging,Quadrants.size());
 
         // compute volume fractions using winding numbers with s x s samples
-        mSampleSize = 4; // default sample size (s=4 means 4x4 grid)
+        mSampleSize = sampleSize;
         computeVolumeFractions(input, mSampleSize);
 
         Services::WriteQuadtreeMesh(name,points,Quadrants,MapEdges,gt);
@@ -282,20 +282,18 @@ namespace Clobscode
 #endif
 
         //shrink outside nodes to the input domain boundary
-        shrinkToBoundary(input);
+        //[DISABLED] shrinkToBoundary(input);
         
 #if (VTKOUT==true)        //CL Debbuging
-        {
-            //save pure octree mesh
-            std::shared_ptr<FEMesh> shrink_octree = make_shared<FEMesh>();
-            saveOutputMesh(shrink_octree,points,Quadrants);
-            string tmp_name = name + "_shrink";
-            Services::WriteVTK(tmp_name,shrink_octree);
-        }
+        //[DISABLED]
+        //    std::shared_ptr<FEMesh> shrink_octree = make_shared<FEMesh>();
+        //    saveOutputMesh(shrink_octree,points,Quadrants);
+        //    string tmp_name = name + "_shrink";
+        //    Services::WriteVTK(tmp_name,shrink_octree);
 #endif
 
         //apply the surface Patterns
-        applySurfacePatterns(input);
+        //[DISABLED] applySurfacePatterns(input);
         
         if (rotated) {
             // rotate the mesh

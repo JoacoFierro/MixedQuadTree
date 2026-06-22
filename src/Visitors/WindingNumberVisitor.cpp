@@ -73,34 +73,18 @@ namespace Clobscode
     //--------------------------------------------------------------------------------
     void WindingNumberVisitor::computePostOrder(Quadrant *q)
     {
-        const auto& subs = q->getSubElements();
-
-        if (subs.empty()) {
-            return;
-        }
-
         vector<double> wn_values;
-        double sum_vf = 0.0;
-        int count = 0;
+        unsigned int s = mSampleSize;
 
-        for (const auto& sub : subs) {
-            if (sub.size() < 3) {
-                continue;
+        for (unsigned int i = 0; i < s; ++i) {
+            for (unsigned int j = 0; j < s; ++j) {
+                Point3D sample = q->getSamplePoint(i, j, *mPoints);
+                double wn = mPolyline->windingNumber(sample);
+                wn_values.push_back(wn);
             }
-
-            Point3D centroid;
-            for (unsigned int idx : sub) {
-                centroid += mPoints->at(idx).getPoint();
-            }
-            centroid /= sub.size();
-
-            double wn = mPolyline->windingNumber(centroid);
-            wn_values.push_back(wn);
-            sum_vf += wn;
-            count++;
         }
 
-        if (count > 0) {
+        if (!wn_values.empty()) {
             q->computeVolumeFraction(wn_values);
         }
     }

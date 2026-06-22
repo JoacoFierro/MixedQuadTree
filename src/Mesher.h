@@ -77,14 +77,15 @@ namespace Clobscode
 				
         virtual std::shared_ptr<FEMesh> generateMesh(Polyline &input, const unsigned short &rl,
                                   const string &name, list<RefinementRegion *> &all_reg,
-                                  const bool &debugging, bool decoration=false);
+                                  const bool &debugging, unsigned int sampleSize=2,
+                                  bool decoration=false);
 		
         virtual std::shared_ptr<FEMesh> refineMesh(Polyline &input, const unsigned short &rl,
                                   const string &name, list<unsigned int> &roctli,
                                   list<RefinementRegion *> &all_reg,
                                   GeometricTransform &gt, const unsigned short &minrl,
-                                  const unsigned short &omaxrl, const bool &debuggin,
-                                  bool decoration=false);
+                                  const unsigned short &omaxrl, const bool &debugging,
+                                  unsigned int sampleSize=2, bool decoration=false);
 
         
         virtual void setInitialState(vector<MeshPoint> &epts, vector<Quadrant> &eocts,
