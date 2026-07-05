@@ -36,7 +36,8 @@ namespace Clobscode
                        const unsigned int &q_id)
         :pointindex(epts),ref_level(ref_level),q_id(q_id),
           surface(false)/*,inregion(false)*/,max_dis(numeric_limits<double>::infinity()),
-          mSampleSize(0), mVolumeFraction(0.0), mHasVolumeFraction(false) {
+          mSampleSize(0), mVolumeFraction(0.0), mHasVolumeFraction(false),
+          mWindingState(WindingState::Unknown) {
 
         /***** BEGIN Debugging variables *******/
               debugging = false;

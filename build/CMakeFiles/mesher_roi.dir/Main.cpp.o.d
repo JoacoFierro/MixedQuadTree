@@ -231,6 +231,7 @@ CMakeFiles/mesher_roi.dir/Main.cpp.o: \
  /home/felipemarchant/Proyectos/MixedQuadTree/src/Visitors/OneIrregularVisitor.h \
  /home/felipemarchant/Proyectos/MixedQuadTree/src/Visitors/EdgeVisitor.h \
  /home/felipemarchant/Proyectos/MixedQuadTree/src/Visitors/WindingNumberVisitor.h \
+ /home/felipemarchant/Proyectos/MixedQuadTree/src/Visitors/WindingNumberSubdivisionVisitor.h \
  /home/felipemarchant/Proyectos/MixedQuadTree/src/Visualization/VolumeFractionVTKWriter.h \
  /usr/include/c++/13/ctime /usr/include/c++/13/cstring \
  /usr/include/string.h /usr/include/strings.h /usr/include/c++/13/chrono \

@@ -849,6 +849,30 @@ Visitors/Visitor.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/mesher_roi.dir/build.make CMakeFiles/mesher_roi.dir/Visitors/Visitor.cpp.s
 .PHONY : Visitors/Visitor.cpp.s
 
+Visitors/WindingNumberSubdivisionVisitor.o: Visitors/WindingNumberSubdivisionVisitor.cpp.o
+.PHONY : Visitors/WindingNumberSubdivisionVisitor.o
+
+# target to build an object file
+Visitors/WindingNumberSubdivisionVisitor.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/mesher_roi.dir/build.make CMakeFiles/mesher_roi.dir/Visitors/WindingNumberSubdivisionVisitor.cpp.o
+.PHONY : Visitors/WindingNumberSubdivisionVisitor.cpp.o
+
+Visitors/WindingNumberSubdivisionVisitor.i: Visitors/WindingNumberSubdivisionVisitor.cpp.i
+.PHONY : Visitors/WindingNumberSubdivisionVisitor.i
+
+# target to preprocess a source file
+Visitors/WindingNumberSubdivisionVisitor.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/mesher_roi.dir/build.make CMakeFiles/mesher_roi.dir/Visitors/WindingNumberSubdivisionVisitor.cpp.i
+.PHONY : Visitors/WindingNumberSubdivisionVisitor.cpp.i
+
+Visitors/WindingNumberSubdivisionVisitor.s: Visitors/WindingNumberSubdivisionVisitor.cpp.s
+.PHONY : Visitors/WindingNumberSubdivisionVisitor.s
+
+# target to generate assembly for a file
+Visitors/WindingNumberSubdivisionVisitor.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/mesher_roi.dir/build.make CMakeFiles/mesher_roi.dir/Visitors/WindingNumberSubdivisionVisitor.cpp.s
+.PHONY : Visitors/WindingNumberSubdivisionVisitor.cpp.s
+
 Visitors/WindingNumberVisitor.o: Visitors/WindingNumberVisitor.cpp.o
 .PHONY : Visitors/WindingNumberVisitor.o
 
@@ -996,6 +1020,9 @@ help:
 	@echo "... Visitors/Visitor.o"
 	@echo "... Visitors/Visitor.i"
 	@echo "... Visitors/Visitor.s"
+	@echo "... Visitors/WindingNumberSubdivisionVisitor.o"
+	@echo "... Visitors/WindingNumberSubdivisionVisitor.i"
+	@echo "... Visitors/WindingNumberSubdivisionVisitor.s"
 	@echo "... Visitors/WindingNumberVisitor.o"
 	@echo "... Visitors/WindingNumberVisitor.i"
 	@echo "... Visitors/WindingNumberVisitor.s"

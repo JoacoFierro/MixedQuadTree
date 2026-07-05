@@ -27,6 +27,7 @@ set(SOURCE_FILES Main
         Visitors/RemoveSubElementsVisitor
 	Visitors/EdgeVisitor
 	Visitors/WindingNumberVisitor
+	Visitors/WindingNumberSubdivisionVisitor
 	Visualization/VolumeFractionVTKWriter
 	#For debuggin
         Visitors/OneIrregularVisitor

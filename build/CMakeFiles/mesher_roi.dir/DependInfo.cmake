@@ -38,6 +38,7 @@ set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/home/felipemarchant/Proyectos/MixedQuadTree/src/Visitors/SurfaceTemplatesVisitor.cpp" "CMakeFiles/mesher_roi.dir/Visitors/SurfaceTemplatesVisitor.cpp.o" "gcc" "CMakeFiles/mesher_roi.dir/Visitors/SurfaceTemplatesVisitor.cpp.o.d"
   "/home/felipemarchant/Proyectos/MixedQuadTree/src/Visitors/TransitionPatternVisitor.cpp" "CMakeFiles/mesher_roi.dir/Visitors/TransitionPatternVisitor.cpp.o" "gcc" "CMakeFiles/mesher_roi.dir/Visitors/TransitionPatternVisitor.cpp.o.d"
   "/home/felipemarchant/Proyectos/MixedQuadTree/src/Visitors/Visitor.cpp" "CMakeFiles/mesher_roi.dir/Visitors/Visitor.cpp.o" "gcc" "CMakeFiles/mesher_roi.dir/Visitors/Visitor.cpp.o.d"
+  "/home/felipemarchant/Proyectos/MixedQuadTree/src/Visitors/WindingNumberSubdivisionVisitor.cpp" "CMakeFiles/mesher_roi.dir/Visitors/WindingNumberSubdivisionVisitor.cpp.o" "gcc" "CMakeFiles/mesher_roi.dir/Visitors/WindingNumberSubdivisionVisitor.cpp.o.d"
   "/home/felipemarchant/Proyectos/MixedQuadTree/src/Visitors/WindingNumberVisitor.cpp" "CMakeFiles/mesher_roi.dir/Visitors/WindingNumberVisitor.cpp.o" "gcc" "CMakeFiles/mesher_roi.dir/Visitors/WindingNumberVisitor.cpp.o.d"
   "/home/felipemarchant/Proyectos/MixedQuadTree/src/Visualization/VolumeFractionVTKWriter.cpp" "CMakeFiles/mesher_roi.dir/Visualization/VolumeFractionVTKWriter.cpp.o" "gcc" "CMakeFiles/mesher_roi.dir/Visualization/VolumeFractionVTKWriter.cpp.o.d"
   )

@@ -49,7 +49,17 @@ using std::pair;
 
 namespace Clobscode
 {
-	
+
+    // TUSQH paper-style classification of a quadrant based on the winding
+    // numbers of its s x s sample points.
+    // - Unknown   : not yet classified.
+    // - AllInside : all s*s samples have winding number > 0.
+    // - AllOutside: all s*s samples have winding number == 0.
+    // - Mixed     : some samples have wn>0 and some have wn==0 (i.e.
+    //               the cell crosses the boundary); the cell must be
+    //               subdivided according to TUSQH.
+    enum class WindingState { Unknown, AllInside, AllOutside, Mixed };
+
 	class Quadrant{
         friend class IntersectionsVisitor;
         friend class IntersectionsDrawingVisitor;
@@ -61,6 +71,7 @@ namespace Clobscode
         friend class SurfaceTemplatesVisitor;
         friend class RemoveSubElementsVisitor;
         friend class WindingNumberVisitor;
+        friend class WindingNumberSubdivisionVisitor;
 
 	public:
 		
@@ -132,6 +143,15 @@ namespace Clobscode
                                        const vector<MeshPoint>& mp) const;
         /***** END Volume Fraction methods *******/
 
+        /***** BEGIN TUSQH subdivision state methods *******/
+        // Sets / gets the TUSQH winding-state classification of the cell.
+        virtual void setWindingState(WindingState s);
+        virtual WindingState getWindingState() const;
+        virtual bool isWindingInside() const;
+        virtual bool isWindingOutside() const;
+        virtual bool isWindingMixed() const;
+        /***** END TUSQH subdivision state methods *******/
+
 
         /***** BEGIN Debugging methods *******/
         virtual void setDebugging();
@@ -170,8 +190,11 @@ namespace Clobscode
         vector<double> mWindingNumbers;
         double mVolumeFraction;
         bool mHasVolumeFraction;
-        /***** END Volume Fraction variables *******/
-	};
+
+        /***** BEGIN TUSQH subdivision state variables *******/
+        WindingState mWindingState;
+        /***** END TUSQH subdivision state variables *******/
+    };
 	
     /***** BEGIN Debugging methods *******/
     inline void Quadrant::setDebugging() {
@@ -350,6 +373,24 @@ namespace Clobscode
         return mHasVolumeFraction;
     }
     /***** END Volume Fraction inline methods *******/
+
+    /***** BEGIN TUSQH subdivision state inline methods *******/
+    inline void Quadrant::setWindingState(WindingState s) {
+        mWindingState = s;
+    }
+    inline WindingState Quadrant::getWindingState() const {
+        return mWindingState;
+    }
+    inline bool Quadrant::isWindingInside() const {
+        return mWindingState == WindingState::AllInside;
+    }
+    inline bool Quadrant::isWindingOutside() const {
+        return mWindingState == WindingState::AllOutside;
+    }
+    inline bool Quadrant::isWindingMixed() const {
+        return mWindingState == WindingState::Mixed;
+    }
+    /***** END TUSQH subdivision state inline methods *******/
 
     std::ostream& operator<<(ostream& o, const Quadrant &q);
 }

@@ -51,8 +51,12 @@ namespace Clobscode
                                                const unsigned short &minrl,
                                                const unsigned short &omaxrl,
                                                const bool &debugging, unsigned int sampleSize,
-                                               bool decoration){
-        
+                                               bool decoration,
+                                               bool useTusqh,
+                                               unsigned int tusqhSampleSize,
+                                               bool refineOnEdgeIntersect,
+                                               unsigned int tusqhExtraResolveDepth){
+
         //Note: rotation are not enabled when refining an already produced mesh.
         bool rotated = !gt.Default();
         if(rotated) {
@@ -62,7 +66,7 @@ namespace Clobscode
              cout << " " << gt.getZAxis() << "\n";*/
             gt.rotatePolyline(input);
         }
-        
+
 #if (VTKOUT==true)         //CL Debbuging
         {
             //save pure octree mesh
@@ -75,7 +79,13 @@ namespace Clobscode
 
         //split Quadrants until the refinement level (rl) is achieved.
         //The output will be a one-irregular mesh.
-        splitQuadrants(rl,input,roctli,all_reg,name,minrl,omaxrl,debugging);
+        if (useTusqh) {
+            windingSubdivide(input, rl, tusqhSampleSize,
+                             refineOnEdgeIntersect, name, debugging,
+                             tusqhExtraResolveDepth);
+        } else {
+            splitQuadrants(rl,input,roctli,all_reg,name,minrl,omaxrl,debugging);
+        }
 
         // compute volume fractions using winding numbers with s x s samples
         mSampleSize = sampleSize;
@@ -189,19 +199,23 @@ namespace Clobscode
                                                  const string &name,
                                                  list<RefinementRegion *> &all_reg,
                                                  const bool &debugging, unsigned int sampleSize,
-                                                 bool decoration){
-        
+                                                 bool decoration,
+                                                 bool useTusqh,
+                                                 unsigned int tusqhSampleSize,
+                                                 bool refineOnEdgeIntersect,
+                                                 unsigned int tusqhExtraResolveDepth){
+
         //ATTENTION: geometric transform causes invalid input rotation when the
         //input is a cube.
         GeometricTransform gt;
-        
+
         //rotate: This method is written below and its mostly commented because
         //it causes conflicts when the input is a cube. Must be checked.
         bool rotated = rotateGridMesh(input, all_reg, gt);
-        
+
         //generate root Quadrants
         generateGridMesh(input);
-        
+
 #if (VTKOUT==true)         //CL Debbuging
         {
             //save pure octree mesh
@@ -211,13 +225,19 @@ namespace Clobscode
             Services::WriteVTK(tmp_name,grid_octree);
         }
 #endif
-        
+
         //split Quadrants until the refinement level (rl) is achieved.
         //the last 0 correspond to min RL in the mesh. As this mesh
         //is starting from scratch, this value is set to 0. When refining
         //an existing mesh, this value may change.
         //The output will be a one-irregular mesh.
-        generateQuadtreeMesh(rl,input,all_reg,name,0,debugging,Quadrants.size());
+        if (useTusqh) {
+            windingSubdivide(input, rl, tusqhSampleSize,
+                             refineOnEdgeIntersect, name, debugging,
+                             tusqhExtraResolveDepth);
+        } else {
+            generateQuadtreeMesh(rl,input,all_reg,name,0,debugging,Quadrants.size());
+        }
 
         // compute volume fractions using winding numbers with s x s samples
         mSampleSize = sampleSize;
@@ -1683,6 +1703,519 @@ namespace Clobscode
             }
         }
 }
+
+    //--------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------------
+    // TUSQH-style subdivision loop.
+    //
+    // Each iteration:
+    //   1. Run WindingNumberSubdivisionVisitor on every candidate quadrant.
+    //      The visitor:
+    //         - computes the s x s winding numbers;
+    //         - classifies the quadrant as AllInside / AllOutside / Mixed;
+    //         - returns true iff the quadrant must be subdivided.
+    //   2. Quadrants classified as AllInside or AllOutside are pushed to
+    //      `processed` (no further refinement).
+    //   3. Quadrants classified as Mixed (or forced by the optional
+    //      edge-intersect criterion) are split via SplitVisitor. Their 4
+    //      children become the new `candidates` for the next iteration.
+    //   4. After splitting, balance the quadtree as usual using toBalance /
+    //      idx_pos_map.
+    //
+    // Stops when:
+    //   - maxDepth is reached, or
+    //   - no candidate was subdivided in this iteration.
+    //
+    // This mirrors the "subdivide while ambiguous" rule from the TUSQH
+    // paper.
+    void Mesher::windingSubdivide(Polyline &input, unsigned int maxDepth,
+                                  unsigned int tusqhSampleSize,
+                                  bool refineOnEdgeIntersect,
+                                  const string &name,
+                                  const bool &debugging,
+                                  unsigned int tusqhExtraResolveDepth)
+    {
+        auto start_time = chrono::high_resolution_clock::now();
+
+        // The list of candidate quadrants to refine and the temporary
+        // list of new candidates created at the current iteration.
+        list<Quadrant> candidates, new_candidates;
+
+        // Quadrants that don't need further refinement this iteration.
+        vector<Quadrant> processed;
+
+        // Map: quadrant index -> position in `processed` (used for
+        // balancing lookups, like the rest of the Mesher code).
+        map<unsigned int, unsigned int> idx_pos_map;
+
+        // Points added at this iteration (mid-edge + center nodes).
+        list<Point3D> new_pts;
+
+        // Quadrant indices whose WindingState must be recomputed AFTER
+        // this iteration's new_pts have been appended to `points`
+        // (otherwise getSamplePoint() reads past the end of `points`).
+        // Populated by the balance path; cleared after classification.
+        vector<unsigned int> needs_classification;
+
+        // Quad indices that need to be split to keep the quadtree
+        // one-irregular.
+        list<pair<unsigned int, unsigned int> > toBalance;
+
+        // Seed: the root quadrants produced by generateGridMesh.
+        candidates.assign(make_move_iterator(Quadrants.begin()),
+                          make_move_iterator(Quadrants.end()));
+        Quadrants.clear();
+
+        // Visitors reused across iterations.
+        WindingNumberSubdivisionVisitor wnsv(tusqhSampleSize,
+                                              refineOnEdgeIntersect);
+        wnsv.setPolyline(&input);
+        wnsv.setPoints(&points);
+
+        // We keep one IntersectionsVisitor around only when the legacy
+        // criterion is requested.
+        IntersectionsVisitor legacyIv(true);
+        if (refineOnEdgeIntersect) {
+            wnsv.setIntersectionsVisitor(&legacyIv);
+        }
+
+        SplitVisitor sv;
+        sv.setPoints(points);
+        sv.setMapEdges(MapEdges);
+        sv.setNewPts(new_pts);
+        sv.setProcessedQuadVector(processed);
+        sv.setMapProcessed(idx_pos_map);
+        sv.setToBalanceList(toBalance);
+
+        // Persistent index counter for new (child) quadrants. We never
+        // reset this inside the depth loop, otherwise we'd produce
+        // duplicate q_ids across iterations.
+        unsigned int new_q_idx = candidates.size();
+
+        for (unsigned int depth = 0; depth < maxDepth; ++depth) {
+            auto start_depth_time = chrono::high_resolution_clock::now();
+            new_pts.clear();
+            new_candidates.clear();
+
+            if (candidates.empty()) {
+                break;
+            }
+
+            // 1) Classify every candidate using the TUSQH criterion.
+            list<Quadrant> refine_tmp;
+            refine_tmp.clear();
+
+            unsigned int refinedCount = 0;
+
+            while (!candidates.empty()) {
+                Quadrant quad = *(candidates.begin());
+                candidates.pop_front();
+
+                bool toRefine = wnsv.visit(&quad);
+
+                if (!toRefine) {
+                    // Inside or outside, no subdivision.
+                    idx_pos_map[quad.getIndex()] = processed.size();
+                    processed.push_back(quad);
+                } else {
+                    refine_tmp.push_back(quad);
+                    refinedCount++;
+                }
+            }
+
+            // 2) Stop if no candidate was subdivided (the quadtree is
+            //    already "TUSQH-stable").
+            if (refine_tmp.empty()) {
+                auto end_depth_time = chrono::high_resolution_clock::now();
+                cout << "         * TUSQH depth " << depth << " (no refinement needed) in "
+                     << std::chrono::duration_cast<chrono::milliseconds>(end_depth_time-start_depth_time).count()
+                     << " ms" << endl;
+                // Early-stop path: do NOT clear processed here, because
+                // the post-loop promotion below still expects to read
+                // entries from processed via idx_pos_map.
+                break;
+            }
+
+            // 3) Split the mixed cells.
+            for (auto& quad : refine_tmp) {
+                list<unsigned int> &inter_edges = quad.getIntersectedEdges();
+                unsigned short qrl = quad.getRefinementLevel();
+
+                vector<vector<Point3D> > clipping_coords;
+                sv.setClipping(clipping_coords);
+
+                vector<vector<unsigned int> > split_elements;
+                sv.setNewEles(split_elements);
+                sv.setStartIndex(new_q_idx);
+
+                quad.accept(&sv);
+
+                if (inter_edges.empty()) {
+                    // Pure interior split (no Polyline edge nearby).
+                    for (unsigned int j = 0; j < split_elements.size(); j++) {
+                        Quadrant o(split_elements[j], qrl+1, new_q_idx++);
+                        new_candidates.push_back(o);
+                    }
+                } else {
+                    // TUSQH refinement of a boundary cell. Children are
+                    // queued without re-running the IntersectionsVisitor:
+                    // the next iteration will classify them again from
+                    // scratch (their winding numbers may now be
+                    // unambiguous).
+                    for (unsigned int j = 0; j < split_elements.size(); j++) {
+                        Quadrant o(split_elements[j], qrl+1, new_q_idx++);
+                        new_candidates.push_back(o);
+                    }
+                }
+            }
+            refine_tmp.clear();
+
+            // 4) Balance the quadtree by splitting neighbours that
+            //    became too coarse with respect to their refined
+            //    siblings.
+            while (!toBalance.empty()) {
+                list<pair<unsigned int, unsigned int> > tmp_toBalance;
+                std::swap(toBalance, tmp_toBalance);
+                tmp_toBalance.sort();
+                tmp_toBalance.unique();
+
+                while (!tmp_toBalance.empty()) {
+                    unsigned int key = tmp_toBalance.begin()->first;
+                    unsigned int val = tmp_toBalance.begin()->second;
+                    tmp_toBalance.pop_front();
+
+                    auto delquad = idx_pos_map.find(key);
+                    if (delquad == idx_pos_map.end()) {
+                        continue;
+                    }
+
+                    Quadrant quad = processed[val];
+                    list<unsigned int> &inter_edges = quad.getIntersectedEdges();
+                    unsigned short qrl = quad.getRefinementLevel();
+
+                    vector<vector<Point3D> > clipping_coords;
+                    sv.setClipping(clipping_coords);
+
+                    vector<vector<unsigned int> > split_elements;
+                    sv.setNewEles(split_elements);
+                    sv.setStartIndex(new_q_idx);
+
+                    quad.accept(&sv);
+
+                    if (inter_edges.empty()) {
+                        for (unsigned int j = 0; j < split_elements.size(); j++) {
+                            Quadrant o(split_elements[j], qrl+1, new_q_idx++);
+                            // Defer classification until points are
+                            // appended to the global point list.
+                            needs_classification.push_back(o.getIndex());
+                            idx_pos_map[o.getIndex()] = processed.size();
+                            processed.push_back(o);
+                        }
+                    } else {
+                        for (unsigned int j = 0; j < split_elements.size(); j++) {
+                            Quadrant o(split_elements[j], qrl+1, new_q_idx++);
+                            needs_classification.push_back(o.getIndex());
+                            idx_pos_map[o.getIndex()] = processed.size();
+                            processed.push_back(o);
+                        }
+                    }
+
+                    if (delquad != idx_pos_map.end()) {
+                        idx_pos_map.erase(delquad);
+                    }
+                }
+            }
+
+            // Promote the refined children to be the next round's
+            // candidates.
+            std::swap(candidates, new_candidates);
+
+            if (!new_pts.empty()) {
+                points.reserve(points.size() + new_pts.size());
+                points.insert(points.end(), new_pts.begin(), new_pts.end());
+            }
+
+            // Deferred classification: balanced children were pushed to
+            // `processed` before their midpoint points existed. Now that
+            // `points` includes the new nodes, classify them so the
+            // AllOutside filter (below) can drop them.
+            for (auto qid : needs_classification) {
+                auto it = idx_pos_map.find(qid);
+                if (it == idx_pos_map.end()) continue;
+                wnsv.visit(&processed[it->second]);
+            }
+            needs_classification.clear();
+
+            auto end_depth_time = chrono::high_resolution_clock::now();
+            cout << "         * TUSQH depth " << depth << " (refined "
+                 << refinedCount << " cells) in "
+                 << std::chrono::duration_cast<chrono::milliseconds>(end_depth_time-start_depth_time).count()
+                 << " ms" << endl;
+        }
+
+        // Any candidate left over (e.g. when we hit maxDepth) is
+        // promoted to processed, but we still need to classify them
+        // (their WindingState may be Unknown from the constructor).
+        for (auto& q : candidates) {
+            wnsv.visit(&q);
+            idx_pos_map[q.getIndex()] = processed.size();
+            processed.push_back(q);
+        }
+        candidates.clear();
+
+        // TUSQH post-processing: discard AllOutside cells (0% volume
+        // fraction) entirely, and align the intersected_edges list of
+        // AllInside cells with the classical pipeline contract
+        // (isInside() == intersected_edges.empty()). Mixed and Unknown
+        // cells are kept untouched and pass to the classical pipeline
+        // with their inherited edge list, exactly as before.
+        unsigned int droppedOutside = 0;
+        for (auto& used_quad : idx_pos_map) {
+            Quadrant& q = processed[used_quad.second];
+            switch (q.getWindingState()) {
+                case WindingState::AllOutside:
+                    // 0% volume fraction: drop entirely so it doesn't
+                    // pollute the output mesh.
+                    ++droppedOutside;
+                    break;
+                case WindingState::AllInside:
+                    // Reproduce the classical state for an interior
+                    // quadrant (no intersected edges). The downstream
+                    // removeOnSurfaceSafe relies on isInside() to skip
+                    // boundary handling for interior cells.
+                    q.getIntersectedEdges().clear();
+                    Quadrants.push_back(std::move(q));
+                    break;
+                case WindingState::Mixed:
+                case WindingState::Unknown:
+                default:
+                    Quadrants.push_back(std::move(q));
+                    break;
+            }
+        }
+        processed.clear();
+
+        if (droppedOutside > 0) {
+            cout << "    * TUSQH dropped " << droppedOutside
+                 << " AllOutside cells (0% volume fraction)\n";
+        }
+
+        // ----------------------------------------------------------------
+        // TUSQH resolve pass (optional).
+        //
+        // After the main depth loop, some cells may still be Mixed at
+        // qrl == maxDepth (they hit the user's hard refinement bound
+        // before TUSQH could resolve them). If `tusqhExtraResolveDepth`
+        // is positive, we run additional pure-TUSQH iterations on those
+        // Mixed cells only, allowing their children to exceed maxDepth.
+        //
+        // Properties of this pass:
+        //   - No balance: we only subdivide Mixed cells and accept the
+        //     resulting one-irregular violations (the alternative would
+        //     be a recursive resolve of neighbours, which is O(N^2)).
+        //   - No legacy edge-intersect criterion: pure TUSQH criterion
+        //     throughout.
+        //   - AllOutside filter still applies: cells whose s x s samples
+        //     are uniformly zero are dropped before reaching the output.
+        //   - The depth bound is `tusqhExtraResolveDepth`, so the user
+        //     stays in control of the maximum cell count.
+        // ----------------------------------------------------------------
+        if (tusqhExtraResolveDepth > 0) {
+            unsigned int mixedBefore = 0;
+            list<Quadrant> resolve_candidates;
+            vector<Quadrant> kept_non_mixed;
+            kept_non_mixed.reserve(Quadrants.size());
+            for (auto& q : Quadrants) {
+                if (q.getWindingState() == WindingState::Mixed) {
+                    resolve_candidates.push_back(std::move(q));
+                    ++mixedBefore;
+                } else {
+                    kept_non_mixed.push_back(std::move(q));
+                }
+            }
+            Quadrants.clear();
+
+            cout << "    * TUSQH resolve pass: " << mixedBefore
+                 << " Mixed leaves at qrl=" << maxDepth << ", "
+                 << tusqhExtraResolveDepth << " extra depth\n";
+
+            if (!resolve_candidates.empty()) {
+                auto resolve_start = chrono::high_resolution_clock::now();
+
+                // Visitors reused across resolve iterations.
+                WindingNumberSubdivisionVisitor resolveVisitor(tusqhSampleSize,
+                                                               false);
+                resolveVisitor.setPolyline(&input);
+                resolveVisitor.setPoints(&points);
+
+                list<Quadrant> new_resolve_candidates;
+                vector<Quadrant> resolve_processed;
+                list<Point3D> resolve_new_pts;
+                vector<unsigned int> resolve_needs_classification;
+
+                // Empty container references for SplitVisitor: we keep
+                // it happy (its `proQuadMap` and `toBalanceList`
+                // pointers need to be non-NULL because it queries them
+                // unconditionally) but never push into them, so balance
+                // is a no-op in the resolve pass.
+                list<pair<unsigned int, unsigned int> > emptyToBalance;
+                map<unsigned int, unsigned int> emptyIdxPosMap;
+
+                SplitVisitor resolveSv;
+                resolveSv.setPoints(points);
+                resolveSv.setMapEdges(MapEdges);
+                resolveSv.setNewPts(resolve_new_pts);
+                resolveSv.setProcessedQuadVector(resolve_processed);
+                resolveSv.setMapProcessed(emptyIdxPosMap);
+                resolveSv.setToBalanceList(emptyToBalance);
+
+                unsigned int totalResolved = 0;
+                unsigned int totalDroppedInResolve = 0;
+
+                for (unsigned int rdepth = 0; rdepth < tusqhExtraResolveDepth; ++rdepth) {
+                    if (resolve_candidates.empty()) {
+                        break;
+                    }
+                    auto dstart = chrono::high_resolution_clock::now();
+
+                    resolve_new_pts.clear();
+                    new_resolve_candidates.clear();
+                    resolve_needs_classification.clear();
+                    unsigned int refinedInIter = 0;
+
+                    while (!resolve_candidates.empty()) {
+                        Quadrant quad = *(resolve_candidates.begin());
+                        resolve_candidates.pop_front();
+
+                        bool toRefine = resolveVisitor.visit(&quad);
+                        if (!toRefine) {
+                            // AllInside or AllOutside: leaf. Will be
+                            // filtered below.
+                            resolve_processed.push_back(std::move(quad));
+                        } else {
+                            // Mixed: split into 4 children. No balance
+                            // in the resolve pass.
+                            list<unsigned int> &inter_edges =
+                                quad.getIntersectedEdges();
+                            unsigned short qrl = quad.getRefinementLevel();
+
+                            vector<vector<Point3D> > clipping_coords;
+                            resolveSv.setClipping(clipping_coords);
+                            vector<vector<unsigned int> > split_elements;
+                            resolveSv.setNewEles(split_elements);
+                            resolveSv.setStartIndex(new_q_idx);
+
+                            quad.accept(&resolveSv);
+
+                            for (unsigned int j = 0; j < split_elements.size(); ++j) {
+                                Quadrant o(split_elements[j], qrl+1, new_q_idx++);
+                                // Pure-TUSQH resolve: classify immediately
+                                // using the s x s samples of the child.
+                                // The child's mid-edge points were just
+                                // appended by SplitVisitor into
+                                // resolve_new_pts (not yet in `points`),
+                                // so we defer classification to after
+                                // resolve_new_pts is appended below.
+                                resolve_needs_classification.push_back(o.getIndex());
+                                new_resolve_candidates.push_back(std::move(o));
+                            }
+                            ++refinedInIter;
+                        }
+                    }
+
+                    // Append mid-edge points created this iteration.
+                    if (!resolve_new_pts.empty()) {
+                        points.reserve(points.size() + resolve_new_pts.size());
+                        points.insert(points.end(),
+                                      resolve_new_pts.begin(),
+                                      resolve_new_pts.end());
+                    }
+
+                    // Deferred classification of new children.
+                    map<unsigned int, unsigned int> resolve_idx_pos_map;
+                    for (auto& q : new_resolve_candidates) {
+                        resolve_idx_pos_map[q.getIndex()] = resolve_processed.size();
+                        resolve_processed.push_back(std::move(q));
+                    }
+                    for (auto qid : resolve_needs_classification) {
+                        auto it = resolve_idx_pos_map.find(qid);
+                        if (it == resolve_idx_pos_map.end()) continue;
+                        resolveVisitor.visit(&resolve_processed[it->second]);
+                    }
+                    resolve_needs_classification.clear();
+
+                    // Promote non-Mixed to processed; keep Mixed for next
+                    // iteration.
+                    list<Quadrant> next_iter_candidates;
+                    for (auto& q : resolve_processed) {
+                        if (q.getWindingState() == WindingState::Mixed) {
+                            next_iter_candidates.push_back(std::move(q));
+                        } else {
+                            ++totalResolved;
+                            if (q.getWindingState() == WindingState::AllOutside) {
+                                ++totalDroppedInResolve;
+                            }
+                            // AllInside stays, its intersected_edges is
+                            // already empty (no edge was assigned in the
+                            // resolve pass because we did not run the
+                            // IntersectionsVisitor here).
+                        }
+                    }
+                    resolve_processed.clear();
+
+                    std::swap(resolve_candidates, next_iter_candidates);
+
+                    auto dend = chrono::high_resolution_clock::now();
+                    cout << "      - resolve depth " << rdepth
+                         << ": refined " << refinedInIter
+                         << ", remaining Mixed " << resolve_candidates.size()
+                         << " in "
+                         << std::chrono::duration_cast<chrono::milliseconds>(dend-dstart).count()
+                         << " ms\n";
+                }
+
+                // Any remaining Mixed leaves (resolve depth exhausted)
+                // are kept: the user chose a finite resolve depth and
+                // accepts that some ambiguity may persist.
+                unsigned int leftoverMixed = 0;
+                for (auto& q : resolve_candidates) {
+                    Quadrants.push_back(std::move(q));
+                    ++leftoverMixed;
+                }
+                // Append AllInside cells produced during resolve.
+                for (auto& q : kept_non_mixed) {
+                    Quadrants.push_back(std::move(q));
+                }
+
+                auto resolve_end = chrono::high_resolution_clock::now();
+                cout << "    * TUSQH resolve pass done in "
+                     << std::chrono::duration_cast<chrono::milliseconds>(
+                            resolve_end-resolve_start).count()
+                     << " ms (resolved " << totalResolved
+                     << ", dropped " << totalDroppedInResolve
+                     << " AllOutside, "
+                     << leftoverMixed << " Mixed leaves remain)\n";
+            } else {
+                // No Mixed cells, nothing to do.
+                Quadrants = std::move(kept_non_mixed);
+            }
+        }
+
+        auto end_time = chrono::high_resolution_clock::now();
+        cout << "    * windingSubdivide (TUSQH) in "
+             << std::chrono::duration_cast<chrono::milliseconds>(end_time-start_time).count()
+             << " ms" << endl;
+
+#if (VTKOUT==true)
+        {
+            std::shared_ptr<FEMesh> tusqh_octree = make_shared<FEMesh>();
+            saveOutputMesh(tusqh_octree, points, Quadrants, debugging);
+            string tmp_name = name + "_tusqh";
+            Services::WriteVTK(tmp_name, tusqh_octree);
+            VolumeFractionVTKWriter::writeWindingState(tmp_name, Quadrants, points);
+        }
+#endif
+    }
 
     //--------------------------------------------------------------------------------
     //--------------------------------------------------------------------------------

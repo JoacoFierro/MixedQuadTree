@@ -47,6 +47,15 @@ namespace Clobscode
         static bool writeVFHeatmap(const std::string& name,
                                    const std::vector<Quadrant>& quadrants,
                                    const std::vector<MeshPoint>& points);
+
+        // Debug visualisation of the TUSQH winding-state classification:
+        //   0 = Unknown
+        //   1 = AllInside
+        //   2 = AllOutside
+        //   3 = Mixed
+        static bool writeWindingState(const std::string& name,
+                                      const std::vector<Quadrant>& quadrants,
+                                      const std::vector<MeshPoint>& points);
     };
 }
 

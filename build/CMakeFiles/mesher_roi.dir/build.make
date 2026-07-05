@@ -489,10 +489,24 @@ CMakeFiles/mesher_roi.dir/Visitors/WindingNumberVisitor.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/mesher_roi.dir/Visitors/WindingNumberVisitor.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/felipemarchant/Proyectos/MixedQuadTree/src/Visitors/WindingNumberVisitor.cpp -o CMakeFiles/mesher_roi.dir/Visitors/WindingNumberVisitor.cpp.s
 
+CMakeFiles/mesher_roi.dir/Visitors/WindingNumberSubdivisionVisitor.cpp.o: CMakeFiles/mesher_roi.dir/flags.make
+CMakeFiles/mesher_roi.dir/Visitors/WindingNumberSubdivisionVisitor.cpp.o: /home/felipemarchant/Proyectos/MixedQuadTree/src/Visitors/WindingNumberSubdivisionVisitor.cpp
+CMakeFiles/mesher_roi.dir/Visitors/WindingNumberSubdivisionVisitor.cpp.o: CMakeFiles/mesher_roi.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/felipemarchant/Proyectos/MixedQuadTree/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_31) "Building CXX object CMakeFiles/mesher_roi.dir/Visitors/WindingNumberSubdivisionVisitor.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/mesher_roi.dir/Visitors/WindingNumberSubdivisionVisitor.cpp.o -MF CMakeFiles/mesher_roi.dir/Visitors/WindingNumberSubdivisionVisitor.cpp.o.d -o CMakeFiles/mesher_roi.dir/Visitors/WindingNumberSubdivisionVisitor.cpp.o -c /home/felipemarchant/Proyectos/MixedQuadTree/src/Visitors/WindingNumberSubdivisionVisitor.cpp
+
+CMakeFiles/mesher_roi.dir/Visitors/WindingNumberSubdivisionVisitor.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/mesher_roi.dir/Visitors/WindingNumberSubdivisionVisitor.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/felipemarchant/Proyectos/MixedQuadTree/src/Visitors/WindingNumberSubdivisionVisitor.cpp > CMakeFiles/mesher_roi.dir/Visitors/WindingNumberSubdivisionVisitor.cpp.i
+
+CMakeFiles/mesher_roi.dir/Visitors/WindingNumberSubdivisionVisitor.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/mesher_roi.dir/Visitors/WindingNumberSubdivisionVisitor.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/felipemarchant/Proyectos/MixedQuadTree/src/Visitors/WindingNumberSubdivisionVisitor.cpp -o CMakeFiles/mesher_roi.dir/Visitors/WindingNumberSubdivisionVisitor.cpp.s
+
 CMakeFiles/mesher_roi.dir/Visualization/VolumeFractionVTKWriter.cpp.o: CMakeFiles/mesher_roi.dir/flags.make
 CMakeFiles/mesher_roi.dir/Visualization/VolumeFractionVTKWriter.cpp.o: /home/felipemarchant/Proyectos/MixedQuadTree/src/Visualization/VolumeFractionVTKWriter.cpp
 CMakeFiles/mesher_roi.dir/Visualization/VolumeFractionVTKWriter.cpp.o: CMakeFiles/mesher_roi.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/felipemarchant/Proyectos/MixedQuadTree/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_31) "Building CXX object CMakeFiles/mesher_roi.dir/Visualization/VolumeFractionVTKWriter.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/felipemarchant/Proyectos/MixedQuadTree/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_32) "Building CXX object CMakeFiles/mesher_roi.dir/Visualization/VolumeFractionVTKWriter.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/mesher_roi.dir/Visualization/VolumeFractionVTKWriter.cpp.o -MF CMakeFiles/mesher_roi.dir/Visualization/VolumeFractionVTKWriter.cpp.o.d -o CMakeFiles/mesher_roi.dir/Visualization/VolumeFractionVTKWriter.cpp.o -c /home/felipemarchant/Proyectos/MixedQuadTree/src/Visualization/VolumeFractionVTKWriter.cpp
 
 CMakeFiles/mesher_roi.dir/Visualization/VolumeFractionVTKWriter.cpp.i: cmake_force
@@ -506,7 +520,7 @@ CMakeFiles/mesher_roi.dir/Visualization/VolumeFractionVTKWriter.cpp.s: cmake_for
 CMakeFiles/mesher_roi.dir/Visitors/OneIrregularVisitor.cpp.o: CMakeFiles/mesher_roi.dir/flags.make
 CMakeFiles/mesher_roi.dir/Visitors/OneIrregularVisitor.cpp.o: /home/felipemarchant/Proyectos/MixedQuadTree/src/Visitors/OneIrregularVisitor.cpp
 CMakeFiles/mesher_roi.dir/Visitors/OneIrregularVisitor.cpp.o: CMakeFiles/mesher_roi.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/felipemarchant/Proyectos/MixedQuadTree/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_32) "Building CXX object CMakeFiles/mesher_roi.dir/Visitors/OneIrregularVisitor.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/felipemarchant/Proyectos/MixedQuadTree/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_33) "Building CXX object CMakeFiles/mesher_roi.dir/Visitors/OneIrregularVisitor.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/mesher_roi.dir/Visitors/OneIrregularVisitor.cpp.o -MF CMakeFiles/mesher_roi.dir/Visitors/OneIrregularVisitor.cpp.o.d -o CMakeFiles/mesher_roi.dir/Visitors/OneIrregularVisitor.cpp.o -c /home/felipemarchant/Proyectos/MixedQuadTree/src/Visitors/OneIrregularVisitor.cpp
 
 CMakeFiles/mesher_roi.dir/Visitors/OneIrregularVisitor.cpp.i: cmake_force
@@ -549,6 +563,7 @@ mesher_roi_OBJECTS = \
 "CMakeFiles/mesher_roi.dir/Visitors/RemoveSubElementsVisitor.cpp.o" \
 "CMakeFiles/mesher_roi.dir/Visitors/EdgeVisitor.cpp.o" \
 "CMakeFiles/mesher_roi.dir/Visitors/WindingNumberVisitor.cpp.o" \
+"CMakeFiles/mesher_roi.dir/Visitors/WindingNumberSubdivisionVisitor.cpp.o" \
 "CMakeFiles/mesher_roi.dir/Visualization/VolumeFractionVTKWriter.cpp.o" \
 "CMakeFiles/mesher_roi.dir/Visitors/OneIrregularVisitor.cpp.o"
 
@@ -585,11 +600,12 @@ mesher_roi: CMakeFiles/mesher_roi.dir/Visitors/SurfaceTemplatesVisitor.cpp.o
 mesher_roi: CMakeFiles/mesher_roi.dir/Visitors/RemoveSubElementsVisitor.cpp.o
 mesher_roi: CMakeFiles/mesher_roi.dir/Visitors/EdgeVisitor.cpp.o
 mesher_roi: CMakeFiles/mesher_roi.dir/Visitors/WindingNumberVisitor.cpp.o
+mesher_roi: CMakeFiles/mesher_roi.dir/Visitors/WindingNumberSubdivisionVisitor.cpp.o
 mesher_roi: CMakeFiles/mesher_roi.dir/Visualization/VolumeFractionVTKWriter.cpp.o
 mesher_roi: CMakeFiles/mesher_roi.dir/Visitors/OneIrregularVisitor.cpp.o
 mesher_roi: CMakeFiles/mesher_roi.dir/build.make
 mesher_roi: CMakeFiles/mesher_roi.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/felipemarchant/Proyectos/MixedQuadTree/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_33) "Linking CXX executable mesher_roi"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/felipemarchant/Proyectos/MixedQuadTree/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_34) "Linking CXX executable mesher_roi"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/mesher_roi.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.

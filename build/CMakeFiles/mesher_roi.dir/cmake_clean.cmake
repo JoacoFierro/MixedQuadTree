@@ -59,6 +59,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/mesher_roi.dir/Visitors/TransitionPatternVisitor.cpp.o.d"
   "CMakeFiles/mesher_roi.dir/Visitors/Visitor.cpp.o"
   "CMakeFiles/mesher_roi.dir/Visitors/Visitor.cpp.o.d"
+  "CMakeFiles/mesher_roi.dir/Visitors/WindingNumberSubdivisionVisitor.cpp.o"
+  "CMakeFiles/mesher_roi.dir/Visitors/WindingNumberSubdivisionVisitor.cpp.o.d"
   "CMakeFiles/mesher_roi.dir/Visitors/WindingNumberVisitor.cpp.o"
   "CMakeFiles/mesher_roi.dir/Visitors/WindingNumberVisitor.cpp.o.d"
   "CMakeFiles/mesher_roi.dir/Visualization/VolumeFractionVTKWriter.cpp.o"

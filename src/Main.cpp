@@ -94,6 +94,17 @@ void endMsg(){
     cerr << "    -i save output mesh in MVM ASCII format (mvm)\n";
     cerr << "    -o save output mesh in OFF ASCII format (off)\n";
     cerr << "    -n Sample grid size for winding numbers (e.g., -n 2 for 2x2 grid)\n";
+    cerr << "    -T Enable TUSQH subdivision: refine a cell only while its sample-\n";
+    cerr << "       point winding numbers are ambiguous (some inside, some outside).\n";
+    cerr << "       Combines with -a / -r / etc. to cap the maximum depth.\n";
+    cerr << "    -N Sample grid size used by the TUSQH subdivision criterion\n";
+    cerr << "       (defaults to 2). Independent of -n (which is for VF output).\n";
+    cerr << "    -E Also refine cells that geometrically intersect an input edge\n";
+    cerr << "       (legacy behaviour layered on top of TUSQH).\n";
+    cerr << "    -M Extra TUSQH resolve depth: number of additional pure-TUSQH\n";
+    cerr << "       iterations applied to the Mixed leaves left at qrl=maxDepth\n";
+    cerr << "       by the main subdivision loop. Default 0 (no resolve pass).\n";
+    cerr << "       Only meaningful with -T.\n";
 }
 
 //-------------------------------------------------------------------
@@ -134,6 +145,10 @@ int main(int argc,char** argv){
     bool region_ref = false;//to write region refinement in vtk format
     bool debugging = false;
     unsigned int mSampleSize = 2;
+    bool useTusqh = false;
+    unsigned int tusqhSampleSize = 2;
+    bool refineOnEdgeIntersect = false;
+    unsigned int tusqhExtraResolveDepth = 0;
     
     //for reading an Quadrant mesh as starting point.
     vector<MeshPoint> oct_points;
@@ -161,6 +176,8 @@ int main(int argc,char** argv){
             case 'q':
             case 'w':
             case 'e':
+            case 'T':
+            case 'E':
                 inout = true;
                 break;
             default:
@@ -173,6 +190,30 @@ int main(int argc,char** argv){
             exit (EXIT_FAILURE);
 		}
         switch (argv[i][1]) {
+            case 'T':
+                useTusqh = true;
+                break;
+            case 'N':
+                tusqhSampleSize = atoi(argv[i+1]);
+                if (tusqhSampleSize < 1) {
+                    std::cerr << "Warning: -N requires s>=1, got "
+                              << tusqhSampleSize << " -> using 2\n";
+                    tusqhSampleSize = 2;
+                }
+                i++;
+                break;
+            case 'E':
+                refineOnEdgeIntersect = true;
+                break;
+            case 'M':
+                tusqhExtraResolveDepth = atoi(argv[i+1]);
+                if (tusqhExtraResolveDepth > 16) {
+                    cerr << "Warning: -M " << tusqhExtraResolveDepth
+                         << " is very large, capping to 16\n";
+                    tusqhExtraResolveDepth = 16;
+                }
+                i++;
+                break;
             case 't': //test polyline
                 for (uint i=0;i<inputs.size();++i) {
                     std::cerr << inputs[i].crossingNumber(Point3D(.5,0.5,0.0));
@@ -397,7 +438,10 @@ int main(int argc,char** argv){
     // and next proceed with mesh generation or refinement
     if (!Quadrant_start) {
 
-        output = mesher.generateMesh(inputs.at(0),ref_level,out_name,all_regions,debugging,mSampleSize,decoration);
+        output = mesher.generateMesh(inputs.at(0),ref_level,out_name,all_regions,
+                                     debugging,mSampleSize,decoration,
+                                     useTusqh,tusqhSampleSize,refineOnEdgeIntersect,
+                                     tusqhExtraResolveDepth);
     }
     else {
         mesher.setInitialState(oct_points,oct_Quadrants,oct_edges);
@@ -405,7 +449,9 @@ int main(int argc,char** argv){
             omaxrl = ref_level;
         }
         output = mesher.refineMesh(inputs.at(0),ref_level,out_name,roctli,all_regions,gt,
-                                   cminrl,omaxrl,debugging,mSampleSize,decoration);
+                                   cminrl,omaxrl,debugging,mSampleSize,decoration,
+                                   useTusqh,tusqhSampleSize,refineOnEdgeIntersect,
+                                   tusqhExtraResolveDepth);
     }
     
     auto gen_time = chrono::high_resolution_clock::now();

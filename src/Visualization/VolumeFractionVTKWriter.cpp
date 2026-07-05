@@ -209,4 +209,88 @@ namespace Clobscode
         return true;
     }
 
+    //--------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------------
+    bool VolumeFractionVTKWriter::writeWindingState(const std::string& name,
+                                                    const std::vector<Quadrant>& quadrants,
+                                                    const std::vector<MeshPoint>& points)
+    {
+        if (quadrants.empty()) {
+            std::cerr << "No quadrants to write\n";
+            return false;
+        }
+
+        string vol_name = name + "_winding_state.vtk";
+
+        FILE* f = fopen(vol_name.c_str(), "wt");
+        if (!f) {
+            std::cerr << "Cannot open file: " << vol_name << "\n";
+            return false;
+        }
+
+        fprintf(f, "# vtk DataFile Version 2.0\n");
+        fprintf(f, "TUSQH Winding State Classification Debug Output\n");
+        fprintf(f, "ASCII\n\n");
+
+        fprintf(f, "DATASET UNSTRUCTURED_GRID\n");
+        fprintf(f, "POINTS %u float\n", (unsigned int)points.size());
+        for (unsigned int i = 0; i < points.size(); i++) {
+            const Point3D& p = points[i].getPoint();
+            fprintf(f, "%+1.8E %+1.8E %+1.8E\n", p[0], p[1], p[2]);
+        }
+
+        unsigned int num_cells = quadrants.size();
+        unsigned int connectivity = 0;
+        for (const auto& q : quadrants) {
+            const auto& idx = q.getPointIndex();
+            connectivity += idx.size() + 1;
+        }
+        fprintf(f, "\nCELLS %u %u\n", num_cells, connectivity);
+        for (const auto& q : quadrants) {
+            const auto& idx = q.getPointIndex();
+            fprintf(f, "%u", (unsigned int)idx.size());
+            for (auto i : idx) {
+                fprintf(f, " %u", i);
+            }
+            fprintf(f, "\n");
+        }
+
+        fprintf(f, "\nCELL_TYPES %u\n", num_cells);
+        for (unsigned int i = 0; i < num_cells; i++) {
+            if (i % 30 == 0) fprintf(f, "\n");
+            fprintf(f, "9 ");
+        }
+
+        fprintf(f, "\n\nCELL_DATA %u\n", num_cells);
+        fprintf(f, "SCALARS winding_state int 1\n");
+        fprintf(f, "LOOKUP_TABLE default\n");
+        for (const auto& q : quadrants) {
+            int s = 0;
+            switch (q.getWindingState()) {
+                case WindingState::Unknown:    s = 0; break;
+                case WindingState::AllInside:  s = 1; break;
+                case WindingState::AllOutside: s = 2; break;
+                case WindingState::Mixed:      s = 3; break;
+            }
+            fprintf(f, "%d\n", s);
+        }
+
+        // Also include the volume fraction for context.
+        fprintf(f, "\nSCALARS volume_fraction double 1\n");
+        fprintf(f, "LOOKUP_TABLE default\n");
+        for (const auto& q : quadrants) {
+            fprintf(f, "%+1.8E\n", q.getVolumeFraction());
+        }
+
+        fprintf(f, "\nSCALARS refinement_level unsigned_int 1\n");
+        fprintf(f, "LOOKUP_TABLE default\n");
+        for (const auto& q : quadrants) {
+            fprintf(f, "%u\n", q.getRefinementLevel());
+        }
+
+        fclose(f);
+        std::cout << "  Wrote: " << vol_name << "\n";
+        return true;
+    }
+
 }
