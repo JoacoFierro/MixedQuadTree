@@ -29,6 +29,7 @@ set(SOURCE_FILES Main
 	Visitors/WindingNumberVisitor
 	Visitors/WindingNumberSubdivisionVisitor
 	Visualization/VolumeFractionVTKWriter
+        Visitors/QuadAliasing
 	#For debuggin
         Visitors/OneIrregularVisitor
         )

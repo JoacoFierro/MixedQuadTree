@@ -46,6 +46,9 @@
 #include "Visitors/WindingNumberVisitor.h"
 #include "Visitors/WindingNumberSubdivisionVisitor.h"
 #include "Visualization/VolumeFractionVTKWriter.h"
+// ----- Modificado por Joaquin Fierro --------------
+#include "Visitors/QuadAliasing.h"
+// ----- Fin modificacion ---------------------------
 
 #include <list>
 #include <vector>
@@ -83,7 +86,7 @@ namespace Clobscode
                                   bool useTusqh=false,
                                   unsigned int tusqhSampleSize=2,
                                   bool refineOnEdgeIntersect=false,
-                                  unsigned int tusqhExtraResolveDepth=0);
+                                  unsigned int tusqhExtraResolveDepth=0,bool Aliasing=false);
 
         virtual std::shared_ptr<FEMesh> refineMesh(Polyline &input, const unsigned short &rl,
                                   const string &name, list<unsigned int> &roctli,
@@ -94,7 +97,7 @@ namespace Clobscode
                                   bool useTusqh=false,
                                   unsigned int tusqhSampleSize=2,
                                   bool refineOnEdgeIntersect=false,
-                                  unsigned int tusqhExtraResolveDepth=0);
+                                  unsigned int tusqhExtraResolveDepth=0,bool Aliasing=false);
 
         
         virtual void setInitialState(vector<MeshPoint> &epts, vector<Quadrant> &eocts,
@@ -113,7 +116,7 @@ namespace Clobscode
                                           const string &name, const unsigned short &minrl,
                                           const unsigned short &givenmaxrl=0,
                                           const bool &debugging=false,
-                                          unsigned int new_q_idx=0);
+                                          unsigned int new_q_idx=0,bool Aliasing=false);
 
         // TUSQH subdivision loop. Subdivides each quadrant while its s x s
         // sample-point winding numbers are ambiguous (i.e. some samples are
@@ -127,7 +130,7 @@ namespace Clobscode
                                       bool refineOnEdgeIntersect,
                                       const string &name,
                                       const bool &debugging=false,
-                                      unsigned int tusqhExtraResolveDepth=0);
+                                      unsigned int tusqhExtraResolveDepth=0,bool Aliasing=false);
         
         virtual bool isItIn(const Polyline &mesh, const list<unsigned int> &faces,
                             const vector<Point3D> &coords) const;

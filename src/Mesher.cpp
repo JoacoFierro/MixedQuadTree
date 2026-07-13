@@ -55,7 +55,7 @@ namespace Clobscode
                                                bool useTusqh,
                                                unsigned int tusqhSampleSize,
                                                bool refineOnEdgeIntersect,
-                                               unsigned int tusqhExtraResolveDepth){
+                                               unsigned int tusqhExtraResolveDepth,bool Aliasing){
 
         //Note: rotation are not enabled when refining an already produced mesh.
         bool rotated = !gt.Default();
@@ -82,7 +82,7 @@ namespace Clobscode
         if (useTusqh) {
             windingSubdivide(input, rl, tusqhSampleSize,
                              refineOnEdgeIntersect, name, debugging,
-                             tusqhExtraResolveDepth);
+                             tusqhExtraResolveDepth,Aliasing);
         } else {
             splitQuadrants(rl,input,roctli,all_reg,name,minrl,omaxrl,debugging);
         }
@@ -203,7 +203,7 @@ namespace Clobscode
                                                  bool useTusqh,
                                                  unsigned int tusqhSampleSize,
                                                  bool refineOnEdgeIntersect,
-                                                 unsigned int tusqhExtraResolveDepth){
+                                                 unsigned int tusqhExtraResolveDepth, bool Aliasing){
 
         //ATTENTION: geometric transform causes invalid input rotation when the
         //input is a cube.
@@ -234,9 +234,9 @@ namespace Clobscode
         if (useTusqh) {
             windingSubdivide(input, rl, tusqhSampleSize,
                              refineOnEdgeIntersect, name, debugging,
-                             tusqhExtraResolveDepth);
+                             tusqhExtraResolveDepth,Aliasing);
         } else {
-            generateQuadtreeMesh(rl,input,all_reg,name,0,debugging,Quadrants.size());
+            generateQuadtreeMesh(rl,input,all_reg,name,0,debugging,Quadrants.size(),Aliasing);
         }
 
         // compute volume fractions using winding numbers with s x s samples
@@ -828,7 +828,7 @@ namespace Clobscode
                                       const string &name, const unsigned short &minrl,
                                       const unsigned short &givenmaxrl,
                                       const bool &debugging,
-                                      unsigned int new_q_idx) {
+                                      unsigned int new_q_idx,bool Aliasing) {
         
         
         auto start_time = chrono::high_resolution_clock::now();
@@ -1733,7 +1733,7 @@ namespace Clobscode
                                   bool refineOnEdgeIntersect,
                                   const string &name,
                                   const bool &debugging,
-                                  unsigned int tusqhExtraResolveDepth)
+                                  unsigned int tusqhExtraResolveDepth,bool Aliasing)
     {
         auto start_time = chrono::high_resolution_clock::now();
 
@@ -2200,7 +2200,26 @@ namespace Clobscode
                 Quadrants = std::move(kept_non_mixed);
             }
         }
+        //------------ Desarollo Joaquin Fierro ---------------------
+        if (Aliasing == true){  
+            list<Quadrant> tmp_Quadrants ;
+            tmp_Quadrants.assign(make_move_iterator(Quadrants.begin()),make_move_iterator(Quadrants.end()));
 
+            cout << "Se ha activado el uso de templates \n"<< endl;
+            QuadAliasing qa;
+            qa.setQuadrant(tmp_Quadrants);
+            qa.setPoints(points);
+            qa.setActualIndex(new_q_idx);
+            qa.getPinches();
+            qa.savePinches("pinches.txt");
+            qa.CreateTemplates();
+
+            std::shared_ptr<FEMesh> templates_octree=make_shared<FEMesh>();
+            saveOutputMesh(templates_octree,points,tmp_Quadrants);
+            string tmp_name = name + "_templates";
+            Services::WriteVTK(tmp_name,templates_octree);
+        } 
+        //------------ Fin desarrollo -------------------------
         auto end_time = chrono::high_resolution_clock::now();
         cout << "    * windingSubdivide (TUSQH) in "
              << std::chrono::duration_cast<chrono::milliseconds>(end_time-start_time).count()

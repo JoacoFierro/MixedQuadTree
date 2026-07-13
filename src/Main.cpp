@@ -105,6 +105,9 @@ void endMsg(){
     cerr << "       iterations applied to the Mixed leaves left at qrl=maxDepth\n";
     cerr << "       by the main subdivision loop. Default 0 (no resolve pass).\n";
     cerr << "       Only meaningful with -T.\n";
+    // ----- Modificado por Joaquin Fierro --------------
+    cerr << "    -h activate persistent homology proyect\n";
+    // ------- Fin modificacion -------- 
 }
 
 //-------------------------------------------------------------------
@@ -144,11 +147,14 @@ int main(int argc,char** argv){
     bool decoration=false; //if supported, write quality attributes to output file
     bool region_ref = false;//to write region refinement in vtk format
     bool debugging = false;
-    unsigned int mSampleSize = 2;
+    unsigned int mSampleSize = 1; // 2
     bool useTusqh = false;
     unsigned int tusqhSampleSize = 2;
     bool refineOnEdgeIntersect = false;
     unsigned int tusqhExtraResolveDepth = 0;
+    // ----- Modificado por Joaquin Fierro --------------
+    bool Aliasing = false;
+    // ----- Fin modificacion 
     
     //for reading an Quadrant mesh as starting point.
     vector<MeshPoint> oct_points;
@@ -168,6 +174,9 @@ int main(int argc,char** argv){
         bool inout = false;
         switch (argv[i][1]) {
             case 'g':
+            // ----- Modificado por Joaquin Fierro --------------
+            case 'h':
+            // ----- Fin modificacion
             case 'v':
             case 'm':
             case 'x':
@@ -383,6 +392,11 @@ int main(int argc,char** argv){
                 }
                 i++;
                 break;
+            // ----- Modificado por Joaquin Fierro --------------
+            case 'h':
+                Aliasing = true;
+                break;
+            // ----- Fin modificacion -------------
             case 'e':
                 debugging = true;
                 break;
@@ -441,7 +455,7 @@ int main(int argc,char** argv){
         output = mesher.generateMesh(inputs.at(0),ref_level,out_name,all_regions,
                                      debugging,mSampleSize,decoration,
                                      useTusqh,tusqhSampleSize,refineOnEdgeIntersect,
-                                     tusqhExtraResolveDepth);
+                                     tusqhExtraResolveDepth,Aliasing);
     }
     else {
         mesher.setInitialState(oct_points,oct_Quadrants,oct_edges);
@@ -451,7 +465,7 @@ int main(int argc,char** argv){
         output = mesher.refineMesh(inputs.at(0),ref_level,out_name,roctli,all_regions,gt,
                                    cminrl,omaxrl,debugging,mSampleSize,decoration,
                                    useTusqh,tusqhSampleSize,refineOnEdgeIntersect,
-                                   tusqhExtraResolveDepth);
+                                   tusqhExtraResolveDepth,Aliasing);
     }
     
     auto gen_time = chrono::high_resolution_clock::now();

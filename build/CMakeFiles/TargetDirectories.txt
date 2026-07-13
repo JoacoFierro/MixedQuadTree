@@ -1,3 +1,0 @@
-/home/felipemarchant/Proyectos/MixedQuadTree/build/CMakeFiles/mesher_roi.dir
-/home/felipemarchant/Proyectos/MixedQuadTree/build/CMakeFiles/edit_cache.dir
-/home/felipemarchant/Proyectos/MixedQuadTree/build/CMakeFiles/rebuild_cache.dir
