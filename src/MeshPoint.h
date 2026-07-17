@@ -124,6 +124,25 @@ namespace Clobscode
         virtual bool getSubcellIsInterior() const;
         /***** END Sub-cell interior classification ******/
 
+        /***** BEGIN Pinch detection state (TUSQH §3.4) *****
+         * Each MeshPoint may be the centre of a pinch configuration
+         * (paper Fig. 9). The fields below are written by
+         * PinchDetector and read by the resolution passes (Fases 3-5).
+         *   mPinchCase      - PinchCase enum (None = not a pinch).
+         *   mIsPinchVertex  - convenience flag, true iff mPinchCase != None.
+         *   mPinchComponent - for adjacency graph of Fase 4
+         *                     (Union-Find label of the pinch group).
+         * Currently NOT consumed by any pipeline code; declared here so
+         * that Fase 1's infrastructure compiles cleanly.
+         ******/
+        virtual void setPinchCase(int pc);
+        virtual int getPinchCase() const;
+        virtual void setIsPinchVertex(bool v);
+        virtual bool isPinchVertex() const;
+        virtual void setPinchComponent(int c);
+        virtual int getPinchComponent() const;
+        /***** END Pinch detection state ******/
+
 	protected:
 
 		Point3D point;
@@ -146,6 +165,12 @@ namespace Clobscode
         bool mHasSubcellVolumeFraction;
         bool mSubcellIsInterior;
         /***** END Sub-cell volume fraction variables ******/
+
+        /***** BEGIN Pinch detection state variables ******/
+        int mPinchCase;
+        bool mIsPinchVertex;
+        int mPinchComponent;
+        /***** END Pinch detection state variables ******/
 
 	};
 	
@@ -251,6 +276,15 @@ namespace Clobscode
         return mSubcellIsInterior;
     }
     /***** END Sub-cell volume fraction inline methods ******/
+
+    /***** BEGIN Pinch detection state inline methods ******/
+    inline void MeshPoint::setPinchCase(int pc) { mPinchCase = pc; }
+    inline int MeshPoint::getPinchCase() const { return mPinchCase; }
+    inline void MeshPoint::setIsPinchVertex(bool v) { mIsPinchVertex = v; }
+    inline bool MeshPoint::isPinchVertex() const { return mIsPinchVertex; }
+    inline void MeshPoint::setPinchComponent(int c) { mPinchComponent = c; }
+    inline int MeshPoint::getPinchComponent() const { return mPinchComponent; }
+    /***** END Pinch detection state inline methods ******/
 	
     inline Point3D &MeshPoint::getPoint(){
         return point;

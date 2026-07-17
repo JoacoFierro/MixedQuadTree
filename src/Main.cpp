@@ -116,6 +116,11 @@ void endMsg(){
     cerr << "       interior and may be used as bridges between components.\n";
     cerr << "    -L Minimum number of leaf quads for a connected component\n";
     cerr << "       to survive the archipelago resolver (default 5).\n";
+    cerr << "    -P mode  Activate pinch detection (paper TUSQH §3.4):\n";
+    cerr << "           0 = off (default, legacy behaviour),\n";
+    cerr << "           1 = on (regular 2x2 vertices only, no hanging nodes),\n";
+    cerr << "           2 = on (regular + hanging nodes, full paper-faithful).\n";
+    cerr << "       Only meaningful with -J (uses sub-cell VF at vertices).\n";
     // ----- Modificado por Joaquin Fierro --------------
     cerr << "    -h activate persistent homology proyect\n";
     // ------- Fin modificacion --------
@@ -167,6 +172,9 @@ int main(int argc,char** argv){
     unsigned int subgridSampleSize = 2;
     double subgridJoinThreshold = 0.5;
     unsigned int subgridMinComponentCells = 5;
+    // Pinch detection mode (paper TUSQH §3.4). 0 = off, 1 = regular
+    // 2x2 vertices only, 2 = include hanging-node cases.
+    unsigned int pinchDetectionMode = 0;
     // ----- Modificado por Joaquin Fierro --------------
     bool Aliasing = false;
     // ----- Fin modificacion
@@ -265,6 +273,15 @@ int main(int argc,char** argv){
                 if (subgridMinComponentCells == 0) {
                     cerr << "Warning: -L must be >= 1; setting to 1\n";
                     subgridMinComponentCells = 1;
+                }
+                i++;
+                break;
+            case 'P':
+                pinchDetectionMode = (unsigned int)atoi(argv[i+1]);
+                if (pinchDetectionMode > 2) {
+                    cerr << "Warning: -P mode " << pinchDetectionMode
+                         << " not supported; clamping to 2\n";
+                    pinchDetectionMode = 2;
                 }
                 i++;
                 break;

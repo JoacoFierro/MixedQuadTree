@@ -31,7 +31,8 @@ namespace Clobscode
     //MeshPoint::MeshPoint():outsidechecked(false), projected(false),feature(false),inside(false),maxdistance(std::numeric_limits<double>::max()){
     MeshPoint::MeshPoint(): state(STATEMASK),maxdistance(std::numeric_limits<double>::max()),
                             mSubcellSampleSize(0), mSubcellVolumeFraction(0.0),
-                            mHasSubcellVolumeFraction(false), mSubcellIsInterior(false){
+                            mHasSubcellVolumeFraction(false), mSubcellIsInterior(false),
+                            mPinchCase(0), mIsPinchVertex(false), mPinchComponent(-1){
         //we assume that every point is outside by default.(inside)
         //checking if a point is outside or not is a very expensive
         //operation, so we try to do it only once (outsidechecked)
@@ -40,7 +41,8 @@ namespace Clobscode
     //MeshPoint::MeshPoint(const Point3D &p):outsidechecked(false), projected(false),feature(false),inside(false),maxdistance(std::numeric_limits<double>::max()){
     MeshPoint::MeshPoint(const Point3D &p):point(p),state(STATEMASK),maxdistance(std::numeric_limits<double>::max()),
                                   mSubcellSampleSize(0), mSubcellVolumeFraction(0.0),
-                                  mHasSubcellVolumeFraction(false), mSubcellIsInterior(false){
+                                  mHasSubcellVolumeFraction(false), mSubcellIsInterior(false),
+                                  mPinchCase(0), mIsPinchVertex(false), mPinchComponent(-1){
 //          point = p;
     }
 

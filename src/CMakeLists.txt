@@ -28,7 +28,9 @@ set(SOURCE_FILES Main
         Visitors/EdgeVisitor
         Visitors/WindingNumberVisitor
         Visitors/WindingNumberSubdivisionVisitor
+        Visitors/PinchVisitor
 	Visualization/VolumeFractionVTKWriter
+        PinchDetector
         Visitors/QuadAliasing
 	#For debuggin
         Visitors/OneIrregularVisitor
