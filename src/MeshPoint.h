@@ -99,11 +99,35 @@ namespace Clobscode
 		
         virtual void setFeature();
         virtual bool isFeature() const;
-		
+
+        /***** BEGIN Sub-cell volume fraction (TUSQH §3.3) *****
+         * Each MeshPoint is a 0-cell of the quadtree. Following the
+         * paper, its "volume fraction" is the mean winding number of an
+         * s x s grid of sample points inside a fictitious square cell
+         * centered at the vertex. The size of the fictitious cell is
+         * computed locally from the incident edges.
+         ******/
+        virtual void setSubcellSampleSize(unsigned int s);
+        virtual unsigned int getSubcellSampleSize() const;
+        virtual void computeSubcellVolumeFraction(const std::vector<double>& wn);
+        virtual double getSubcellVolumeFraction() const;
+        virtual const std::vector<double>& getSubcellWindingNumbers() const;
+        virtual bool hasSubcellVolumeFraction() const;
+
+        /***** BEGIN Sub-cell interior classification *****
+         * Cached result of (subcellVF >= threshold) where threshold is
+         * the same VF threshold used by Mesher for 2-cells. Lets
+         * archipelago resolution decide which vertices/edges are
+         * "interior" without recomputing the wn every time.
+         ******/
+        virtual void setSubcellIsInterior(bool v);
+        virtual bool getSubcellIsInterior() const;
+        /***** END Sub-cell interior classification ******/
+
 	protected:
-		
+
 		Point3D point;
-		//this flag avoids to re-check if node is inside, 
+		//this flag avoids to re-check if node is inside,
 		//which is an expensive task
 //		bool outsidechecked, projected, feature;
 		//inside is a flag to shrink elements to the surface.
@@ -112,9 +136,17 @@ namespace Clobscode
 //		bool inside;//, projected;
         MeshPointState state;
 		list<unsigned int> elements;
-		
+
 		double maxdistance;
-		
+
+        /***** BEGIN Sub-cell volume fraction variables ******/
+        unsigned int mSubcellSampleSize;
+        std::vector<double> mSubcellWindingNumbers;
+        double mSubcellVolumeFraction;
+        bool mHasSubcellVolumeFraction;
+        bool mSubcellIsInterior;
+        /***** END Sub-cell volume fraction variables ******/
+
 	};
 	
 	inline void MeshPoint::outsideChecked(){
@@ -184,11 +216,41 @@ namespace Clobscode
         //feature = true;
         BITMASK_SET(state,FEATURE);
     }
-    
+
     inline bool MeshPoint::isFeature() const {
         //return feature;
         return BITMASK_CHECK(state,FEATURE);
     }
+
+    /***** BEGIN Sub-cell volume fraction inline methods ******/
+    inline void MeshPoint::setSubcellSampleSize(unsigned int s) {
+        mSubcellSampleSize = s;
+    }
+
+    inline unsigned int MeshPoint::getSubcellSampleSize() const {
+        return mSubcellSampleSize;
+    }
+
+    inline double MeshPoint::getSubcellVolumeFraction() const {
+        return mSubcellVolumeFraction;
+    }
+
+    inline const std::vector<double>& MeshPoint::getSubcellWindingNumbers() const {
+        return mSubcellWindingNumbers;
+    }
+
+    inline bool MeshPoint::hasSubcellVolumeFraction() const {
+        return mHasSubcellVolumeFraction;
+    }
+
+    inline void MeshPoint::setSubcellIsInterior(bool v) {
+        mSubcellIsInterior = v;
+    }
+
+    inline bool MeshPoint::getSubcellIsInterior() const {
+        return mSubcellIsInterior;
+    }
+    /***** END Sub-cell volume fraction inline methods ******/
 	
     inline Point3D &MeshPoint::getPoint(){
         return point;

@@ -1,0 +1,40 @@
+# TUSQH boundary-filter test
+#
+# A single rectangle with a notch cut out of one corner.
+# Goal: validate that isEdgeOnDomainBoundary filters out bridges
+# that would extend OUTSIDE the polyline (winding = 0).
+#
+# Geometry:
+#   - Outer polygon: a "L-shaped" domain in [0,2] x [0,1]
+#   - Single CCW outline with two CCW turns
+#   - The TUSQH subdivision approximates the L-shape with mixed cells
+#   - Bridge candidates on the outer boundary must be filtered
+#
+# Expected behavior (with filter):
+#   - All bridge candidates on the L's outer boundary are filtered
+#   - 0 bridges added
+#   - The output mesh has only the cells kept by TUSQH
+#
+# Without filter (baseline):
+#   - Bridges on the L's outer boundary are added, extending outside
+#   - Resulting mesh has more (wasteful) cells
+8 2 0 0
+# Outer L-shaped boundary (CCW)
+1  0.0   0.0
+2  2.0   0.0
+3  2.0   1.0
+4  1.5   1.0
+5  1.5   0.4
+6  0.4   0.4
+7  0.4   1.0
+8  0.0   1.0
+8 0
+1  1 2
+2  2 3
+3  3 4
+4  4 5
+5  5 6
+6  6 7
+7  7 8
+8  8 1
+0

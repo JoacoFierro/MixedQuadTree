@@ -105,9 +105,20 @@ void endMsg(){
     cerr << "       iterations applied to the Mixed leaves left at qrl=maxDepth\n";
     cerr << "       by the main subdivision loop. Default 0 (no resolve pass).\n";
     cerr << "       Only meaningful with -T.\n";
+    cerr << "    -J Enable TUSQH sub-cell volume fractions (vertices + edges)\n";
+    cerr << "       and archipelago resolution (paper §3.3+§3.4). The\n";
+    cerr << "       component-merge step currently only removes components\n";
+    cerr << "       with fewer than -L quads; the joining step is logged.\n";
+    cerr << "    -K Sample grid size used by the sub-cell subgrid sampling\n";
+    cerr << "       (defaults to 2). Only meaningful with -J.\n";
+    cerr << "    -F TUSQH sub-cell join threshold (0..1, default 0.5).\n";
+    cerr << "       Vertices / edges with sub-cell VF >= -F are considered\n";
+    cerr << "       interior and may be used as bridges between components.\n";
+    cerr << "    -L Minimum number of leaf quads for a connected component\n";
+    cerr << "       to survive the archipelago resolver (default 5).\n";
     // ----- Modificado por Joaquin Fierro --------------
     cerr << "    -h activate persistent homology proyect\n";
-    // ------- Fin modificacion -------- 
+    // ------- Fin modificacion --------
 }
 
 //-------------------------------------------------------------------
@@ -152,9 +163,13 @@ int main(int argc,char** argv){
     unsigned int tusqhSampleSize = 2;
     bool refineOnEdgeIntersect = false;
     unsigned int tusqhExtraResolveDepth = 0;
+    bool useSubgrid = false;
+    unsigned int subgridSampleSize = 2;
+    double subgridJoinThreshold = 0.5;
+    unsigned int subgridMinComponentCells = 5;
     // ----- Modificado por Joaquin Fierro --------------
     bool Aliasing = false;
-    // ----- Fin modificacion 
+    // ----- Fin modificacion
     
     //for reading an Quadrant mesh as starting point.
     vector<MeshPoint> oct_points;
@@ -187,6 +202,7 @@ int main(int argc,char** argv){
             case 'e':
             case 'T':
             case 'E':
+            case 'J':
                 inout = true;
                 break;
             default:
@@ -220,6 +236,35 @@ int main(int argc,char** argv){
                     cerr << "Warning: -M " << tusqhExtraResolveDepth
                          << " is very large, capping to 16\n";
                     tusqhExtraResolveDepth = 16;
+                }
+                i++;
+                break;
+            case 'J':
+                useSubgrid = true;
+                break;
+            case 'K':
+                subgridSampleSize = atoi(argv[i+1]);
+                if (subgridSampleSize < 2) {
+                    cerr << "Warning: -K requires s>=2, got "
+                         << subgridSampleSize << " -> using 2\n";
+                    subgridSampleSize = 2;
+                }
+                i++;
+                break;
+            case 'F':
+                subgridJoinThreshold = std::atof(argv[i+1]);
+                if (subgridJoinThreshold < 0.0 || subgridJoinThreshold > 1.0) {
+                    cerr << "Warning: -F threshold " << subgridJoinThreshold
+                         << " outside [0,1]; clamping\n";
+                    subgridJoinThreshold = std::max(0.0, std::min(1.0, subgridJoinThreshold));
+                }
+                i++;
+                break;
+            case 'L':
+                subgridMinComponentCells = (unsigned int)atoi(argv[i+1]);
+                if (subgridMinComponentCells == 0) {
+                    cerr << "Warning: -L must be >= 1; setting to 1\n";
+                    subgridMinComponentCells = 1;
                 }
                 i++;
                 break;
@@ -455,7 +500,9 @@ int main(int argc,char** argv){
         output = mesher.generateMesh(inputs.at(0),ref_level,out_name,all_regions,
                                      debugging,mSampleSize,decoration,
                                      useTusqh,tusqhSampleSize,refineOnEdgeIntersect,
-                                     tusqhExtraResolveDepth,Aliasing);
+                                     tusqhExtraResolveDepth,Aliasing,
+                                     useSubgrid,subgridSampleSize,
+                                     subgridJoinThreshold,subgridMinComponentCells);
     }
     else {
         mesher.setInitialState(oct_points,oct_Quadrants,oct_edges);
@@ -465,7 +512,9 @@ int main(int argc,char** argv){
         output = mesher.refineMesh(inputs.at(0),ref_level,out_name,roctli,all_regions,gt,
                                    cminrl,omaxrl,debugging,mSampleSize,decoration,
                                    useTusqh,tusqhSampleSize,refineOnEdgeIntersect,
-                                   tusqhExtraResolveDepth,Aliasing);
+                                   tusqhExtraResolveDepth,Aliasing,
+                                   useSubgrid,subgridSampleSize,
+                                   subgridJoinThreshold,subgridMinComponentCells);
     }
     
     auto gen_time = chrono::high_resolution_clock::now();

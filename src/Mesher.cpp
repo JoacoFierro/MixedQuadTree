@@ -26,6 +26,9 @@
 #include "Mesher.h"
 #include <math.h>
 #include <iomanip>
+#include <queue>
+#include <unordered_set>
+#include <unordered_map>
 
 namespace Clobscode
 {
@@ -55,7 +58,11 @@ namespace Clobscode
                                                bool useTusqh,
                                                unsigned int tusqhSampleSize,
                                                bool refineOnEdgeIntersect,
-                                               unsigned int tusqhExtraResolveDepth,bool Aliasing){
+                                               unsigned int tusqhExtraResolveDepth,bool Aliasing,
+                                               bool useSubgrid,
+                                               unsigned int subgridSampleSize,
+                                               double subgridJoinThreshold,
+                                               unsigned int subgridMinComponentCells){
 
         //Note: rotation are not enabled when refining an already produced mesh.
         bool rotated = !gt.Default();
@@ -80,6 +87,13 @@ namespace Clobscode
         //split Quadrants until the refinement level (rl) is achieved.
         //The output will be a one-irregular mesh.
         if (useTusqh) {
+            // Heuristic for the TUSQH coarse-grid bug: see Mesher::
+            // generateMesh. Here the quadtree was loaded from a
+            // previous mesh (option -c), so the initial grid may be
+            // very coarse if that mesh was produced with `generate
+            // Mesh` and -T but without enough subdivisions (e.g. the
+            // Chesapeake Bay case). Apply the same heuristic.
+            preRefineForTusqh(input, rl, all_reg, name, debugging, Aliasing);
             windingSubdivide(input, rl, tusqhSampleSize,
                              refineOnEdgeIntersect, name, debugging,
                              tusqhExtraResolveDepth,Aliasing);
@@ -90,6 +104,18 @@ namespace Clobscode
         // compute volume fractions using winding numbers with s x s samples
         mSampleSize = sampleSize;
         computeVolumeFractions(input, mSampleSize);
+
+        // TUSQH §3.3 sub-cell volume fractions + §3.4 archipelago resolution.
+        // Both must run BEFORE removing surface quads because archipelago
+        // detection needs the full quad connectivity.
+        if (useSubgrid) {
+            computeSubcellVolumeFractions(input, subgridSampleSize,
+                                           subgridJoinThreshold, name);
+            resolveArchipelagos(input, subgridSampleSize,
+                                subgridJoinThreshold,
+                                subgridMinComponentCells,
+                                name);
+        }
 
         //Save the Octant mesh for further refinement.
         Services::WriteQuadtreeMesh(name,points,Quadrants,MapEdges,gt);
@@ -203,7 +229,11 @@ namespace Clobscode
                                                  bool useTusqh,
                                                  unsigned int tusqhSampleSize,
                                                  bool refineOnEdgeIntersect,
-                                                 unsigned int tusqhExtraResolveDepth, bool Aliasing){
+                                                 unsigned int tusqhExtraResolveDepth, bool Aliasing,
+                                                 bool useSubgrid,
+                                                 unsigned int subgridSampleSize,
+                                                 double subgridJoinThreshold,
+                                                 unsigned int subgridMinComponentCells){
 
         //ATTENTION: geometric transform causes invalid input rotation when the
         //input is a cube.
@@ -232,6 +262,15 @@ namespace Clobscode
         //an existing mesh, this value may change.
         //The output will be a one-irregular mesh.
         if (useTusqh) {
+            // Heuristic for the TUSQH coarse-grid bug: if the quadtree
+            // starts with very few root cells (1-2 is typical for large
+            // polylines like Chesapeake Bay at level 0) and -N is small
+            // (default 2 -> 4 samples per cell), TUSQH undersamples the
+            // huge cells and classifies them as AllInside/AllOutside,
+            // producing almost no subdivisions. Pre-refine uniformly to
+            // a base level using the legacy `generateQuadtreeMesh` so
+            // TUSQH has enough small cells to be meaningful.
+            preRefineForTusqh(input, rl, all_reg, name, debugging, Aliasing);
             windingSubdivide(input, rl, tusqhSampleSize,
                              refineOnEdgeIntersect, name, debugging,
                              tusqhExtraResolveDepth,Aliasing);
@@ -242,6 +281,18 @@ namespace Clobscode
         // compute volume fractions using winding numbers with s x s samples
         mSampleSize = sampleSize;
         computeVolumeFractions(input, mSampleSize);
+
+        // TUSQH §3.3 sub-cell volume fractions + §3.4 archipelago resolution.
+        // Both must run BEFORE removing surface quads because archipelago
+        // detection needs the full quad connectivity.
+        if (useSubgrid) {
+            computeSubcellVolumeFractions(input, subgridSampleSize,
+                                           subgridJoinThreshold, name);
+            resolveArchipelagos(input, subgridSampleSize,
+                                subgridJoinThreshold,
+                                subgridMinComponentCells,
+                                name);
+        }
 
         Services::WriteQuadtreeMesh(name,points,Quadrants,MapEdges,gt);
         //Some Quads will be then removed due to proximity with the surface.
@@ -1584,9 +1635,25 @@ namespace Clobscode
         for (auto p: extra_pts) {
             out_pts.push_back(p);
         }
-        
+
+        // Guard: if all quadrants were dropped (e.g. by the
+        // archipelago resolver at L >= all component sizes, or by a
+        // future caller that empties Quadrants), emit an empty mesh
+        // rather than dereferencing tmp_Quadrants[0]. This was a
+        // pre-existing crash reachable from the post-resolve
+        // debugging/projection/removal paths at lines 138/150/165.
+        if (tmp_Quadrants.empty()) {
+            mesh->setPoints(out_pts);
+            mesh->setElements(out_els);
+            auto end_time = chrono::high_resolution_clock::now();
+            cout << "    * SaveOutputMesh (empty Quadrants) in "
+                 << std::chrono::duration_cast<chrono::milliseconds>(end_time-start_time).count()
+                 << " ms" << endl;
+            return 0;
+        }
+
         unsigned int frl = tmp_Quadrants[0].getRefinementLevel();
-        
+
         bool errors = false;
         
         if (debugging) {
@@ -1963,26 +2030,39 @@ namespace Clobscode
         }
         candidates.clear();
 
-        // TUSQH post-processing: discard AllOutside cells (0% volume
-        // fraction) entirely, and align the intersected_edges list of
-        // AllInside cells with the classical pipeline contract
+        // TUSQH post-processing: PRESERVE the full cubical complex.
+        //
+        // Paper-faithful (TUSQH §3.4): the bridge-joining algorithm
+        // needs access to the background grid topology. Cells with
+        // AllOutside winding state (0% volume fraction) are kept in
+        // `Quadrants` so that MapEdges retains the edges between them
+        // and the surrounding interior cells. This lets the bridge
+        // algorithm identify pairs of components whose only separation
+        // is a chain of exterior cells and connect them.
+        //
+        // The downstream pipeline treats AllOutside cells as invisible:
+        //   - linkElementsToNodes skips them,
+        //   - detectInsideNodes / detectFeatureQuadrants skip them,
+        //   - removeOnSurfaceSafe already skips them via isInside(),
+        //   - saveOutputMesh filters them out at output time.
+        // The intersected_edges list of AllInside cells is cleared to
+        // honour the classical pipeline contract
         // (isInside() == intersected_edges.empty()). Mixed and Unknown
-        // cells are kept untouched and pass to the classical pipeline
-        // with their inherited edge list, exactly as before.
-        unsigned int droppedOutside = 0;
+        // cells are kept untouched with their inherited edge list.
+        unsigned int preservedOutside = 0;
         for (auto& used_quad : idx_pos_map) {
             Quadrant& q = processed[used_quad.second];
             switch (q.getWindingState()) {
                 case WindingState::AllOutside:
-                    // 0% volume fraction: drop entirely so it doesn't
-                    // pollute the output mesh.
-                    ++droppedOutside;
+                    // Paper-faithful: keep the cell so the cubical
+                    // complex remains intact for bridge-joining. Its
+                    // isInside() returns false, so all downstream
+                    // consumers skip it.
+                    q.getIntersectedEdges().clear();
+                    Quadrants.push_back(std::move(q));
+                    ++preservedOutside;
                     break;
                 case WindingState::AllInside:
-                    // Reproduce the classical state for an interior
-                    // quadrant (no intersected edges). The downstream
-                    // removeOnSurfaceSafe relies on isInside() to skip
-                    // boundary handling for interior cells.
                     q.getIntersectedEdges().clear();
                     Quadrants.push_back(std::move(q));
                     break;
@@ -1995,9 +2075,10 @@ namespace Clobscode
         }
         processed.clear();
 
-        if (droppedOutside > 0) {
-            cout << "    * TUSQH dropped " << droppedOutside
-                 << " AllOutside cells (0% volume fraction)\n";
+        if (preservedOutside > 0) {
+            cout << "    * TUSQH preserved " << preservedOutside
+                 << " AllOutside cells in cubical complex (0% VF, "
+                 << "used by bridge-joining for topology)\n";
         }
 
         // ----------------------------------------------------------------
@@ -2832,6 +2913,906 @@ namespace Clobscode
         cout << "    * ProjectCloseToBoundary in "
         << std::chrono::duration_cast<chrono::milliseconds>(end_time-start_time).count();
         cout << " ms"<< endl;
-        
+
+    }
+
+    //--------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------------
+
+    void Mesher::computeSubcellVolumeFractions(Polyline &input,
+                                               unsigned int sampleSize,
+                                               double joinThreshold,
+                                               const std::string &name)
+    {
+        auto start_time = chrono::high_resolution_clock::now();
+
+        SubgridSampler sampler;
+        unsigned int s = SubgridSampler::sanitizeSampleSize(sampleSize);
+
+        mEdgeSubcellVF.clear();
+
+        // ----- 0-cells (vertices) -----
+        // For each vertex of the quadtree, build the list of incident
+        // edge lengths by scanning MapEdges. Then sample s x s points
+        // in the fictitious square cell centered on the vertex.
+        for (unsigned int vIdx = 0; vIdx < points.size(); ++vIdx) {
+            vector<pair<unsigned int, double>> incident =
+                SubgridSampler::buildIncidentEdgeList(vIdx, MapEdges, points);
+
+            SubgridSampler::Result r =
+                sampler.sampleVertex(points[vIdx].getPoint(), incident, input, s);
+
+            points[vIdx].setSubcellSampleSize(r.sampleSize);
+            points[vIdx].computeSubcellVolumeFraction(r.windingNumbers);
+            points[vIdx].setSubcellIsInterior(
+                points[vIdx].getSubcellVolumeFraction() >= joinThreshold);
+        }
+
+        // ----- 1-cells (edges) -----
+        // For each edge, get the perpendicular thickness of the
+        // adjacent quads and sample s x s points in the rectangle.
+        for (const auto& entry : MapEdges) {
+            const QuadEdge& edge = entry.first;
+
+            vector<double> perp =
+                SubgridSampler::buildQuadPerpThickness(edge, MapEdges,
+                                                       Quadrants, points);
+
+            SubgridSampler::Result r = sampler.sampleEdge(
+                points[edge[0]].getPoint(),
+                points[edge[1]].getPoint(),
+                perp, input, s);
+
+            EdgeSubcellVFData data;
+            data.volumeFraction = r.volumeFraction;
+            data.windingNumbers = r.windingNumbers;
+            data.sampleSize     = r.sampleSize;
+            data.isInterior     = (r.volumeFraction >= joinThreshold);
+            mEdgeSubcellVF[edge] = data;
+        }
+
+#if (VTKOUT==true)
+        {
+            string tmp_name = name;
+            VolumeFractionVTKWriter::writeSubcellVertexVF(tmp_name, Quadrants, points,
+                                                          joinThreshold);
+            VolumeFractionVTKWriter::writeSubcellEdgeVF(tmp_name, Quadrants, points,
+                                                        mEdgeSubcellVF, joinThreshold);
+        }
+#endif
+
+        auto end_time = chrono::high_resolution_clock::now();
+        cout << "    * computeSubcellVolumeFractions (s=" << s
+             << ", joinThreshold=" << joinThreshold << ") in "
+             << std::chrono::duration_cast<chrono::milliseconds>(end_time-start_time).count()
+             << " ms" << endl;
+    }
+
+    //--------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------------
+
+    // Helper: TUSQH 1-to-5 bridge split.
+    //
+    // Given a quad `q` and an edge index `bridgeEdgeIdx` (0..3),
+    // replaces `q` with 4 interior sub-quads (a standard 1-to-4
+    // green refinement) PLUS 1 new "bridge" quad that extends
+    // OUTWARD from the bridge edge by perpendicular distance
+    // H/sampleSize, where H is the distance from the bridge edge to
+    // the opposite edge of `q`.
+    //
+    // Side effects:
+    //   - adds new MeshPoints (the 4 mid-edges + center from the
+    //     1-to-4 split, plus 2 exterior corners for the bridge) to
+    //     `points`,
+    //   - adds/updates MapEdges entries for the 4 sub-quads and the
+    //     bridge quad.
+    //
+    // Returns: vector of 5 new Quadrants (4 sub-quads + 1 bridge
+    // quad) with q_ids starting at `nextQIdx`. `nextQIdx` is
+    // incremented by 5 on success.
+    //
+    // The CALLER is responsible for:
+    //   - removing `q` from `Quadrants`,
+    //   - inserting the returned 5 quads in `q`'s place,
+    //   - re-running computeSubcellVolumeFractions so the new edges
+    //     have their fictitious cells evaluated.
+    //
+    // On failure (degenerate quad, SplitVisitor refuses, etc.)
+    // returns an empty vector and does NOT modify any data
+    // structures beyond what SplitVisitor did. The caller should
+    // then leave `q` in Quadrants.
+    vector<Quadrant> Mesher::bridgeSplitAtEdge(Quadrant &q,
+                                                unsigned int bridgeEdgeIdx,
+                                                unsigned int sampleSize,
+                                                unsigned int &nextQIdx)
+    {
+        vector<Quadrant> result;
+
+        if (bridgeEdgeIdx > 3) return result;
+
+        const vector<unsigned int> &pi = q.getPointIndex();
+        if (pi.size() != 4) return result;
+
+        if (sampleSize == 0) return result;
+
+        // Identify the bridge edge endpoints and the opposite edge
+        // endpoints. The bridge edge is edge i = (pi[i], pi[(i+1)%4]).
+        // The opposite edge is (pi[(i+2)%4], pi[(i+3)%4]).
+        const unsigned int e0 = pi[bridgeEdgeIdx];
+        const unsigned int e1 = pi[(bridgeEdgeIdx + 1) % 4];
+        const unsigned int e2 = pi[(bridgeEdgeIdx + 2) % 4];
+        const unsigned int e3 = pi[(bridgeEdgeIdx + 3) % 4];
+
+        const Point3D &p_e0 = points[e0].getPoint();
+        const Point3D &p_e1 = points[e1].getPoint();
+        const Point3D &p_e2 = points[e2].getPoint();
+        const Point3D &p_e3 = points[e3].getPoint();
+
+        // Issue #2 (TUSQH §3.4): outward direction via quad centroid.
+        //
+        // The original implementation computed the outward direction as
+        // `-normalize(mid_opposite - mid_bridge)`, which assumes a
+        // convex, axis-aligned quad. For rotated or non-convex quads
+        // the midpoint of the opposite edge does not necessarily lie
+        // on the "interior" side. Using the centroid (mean of the 4
+        // corners) is robust: it always lies inside the convex hull.
+        //
+        // H is still defined as the centroid-to-edge distance, so the
+        // bridge thickness H/sampleSize is consistent with the paper's
+        // 1-to-5 template geometry.
+        Point3D mid_bridge = (p_e0 + p_e1) * 0.5;
+        Point3D dir_exterior_unit = computeExteriorDirection(
+            q, bridgeEdgeIdx, points);
+        if (dir_exterior_unit.Norm() < 1e-12) return result;  // degenerate
+
+        Point3D centroid = (p_e0 + p_e1 + p_e2 + p_e3) * 0.25;
+        double H = (centroid - mid_bridge).Norm();
+        if (H < 1e-12) return result;
+
+        double bridge_thickness = H / (double)sampleSize;
+
+        Point3D p_e0_ext = p_e0 + dir_exterior_unit * bridge_thickness;
+        Point3D p_e1_ext = p_e1 + dir_exterior_unit * bridge_thickness;
+
+        // Apply the existing 1-to-4 SplitVisitor. It writes:
+        //   - 4 sub-quads into `new_eles` (each a vector of 4 point
+        //     indices that already reference future indices in
+        //     `points`)
+        //   - 4 mid-edge points + 1 center point into `new_pts`
+        //     (in that order; some may be missing if their edge was
+        //     already split)
+        //   - new sub-edges and updated midpoint info into MapEdges.
+        SplitVisitor sv;
+        list<Point3D> new_pts;
+        vector<vector<unsigned int>> new_eles;
+        vector<vector<Point3D>> clipping_coords;
+        vector<Quadrant> processed;
+        map<unsigned int, unsigned int> idx_pos_map;
+        list<pair<unsigned int, unsigned int>> to_balance;
+
+        sv.setPoints(points);
+        sv.setMapEdges(MapEdges);
+        sv.setNewPts(new_pts);
+        sv.setNewEles(new_eles);
+        sv.setClipping(clipping_coords);
+        sv.setProcessedQuadVector(processed);
+        sv.setMapProcessed(idx_pos_map);
+        sv.setToBalanceList(to_balance);
+        sv.setStartIndex(nextQIdx);
+
+        bool visit_ok = sv.visit(&q);
+        if (!visit_ok || new_eles.size() != 4) {
+            return result;
+        }
+
+        // Append SplitVisitor's new points (mid-edges and center)
+        // to `points`. After this, the point indices inside
+        // `new_eles[i]` are valid in the global `points` vector.
+        for (const auto& p : new_pts) {
+            points.emplace_back(MeshPoint(p));
+        }
+
+        // Add the 2 new exterior corners for the bridge quad.
+        unsigned int e0_ext_idx = (unsigned int)points.size();
+        points.emplace_back(MeshPoint(p_e0_ext));
+        unsigned int e1_ext_idx = (unsigned int)points.size();
+        points.emplace_back(MeshPoint(p_e1_ext));
+
+        // Find the midpoint on the bridge edge (which SplitVisitor
+        // stored as `info[0]` of the (e0, e1) edge entry).
+        unsigned int m_bridge;
+        {
+            unsigned int a = e0, b = e1;
+            if (a > b) std::swap(a, b);
+            QuadEdge ke(a, b);
+            auto it = MapEdges.find(ke);
+            if (it == MapEdges.end() || it->second[0] == 0) {
+                // SplitVisitor didn't split the bridge edge (it was
+                // already split by an earlier operation). For now
+                // abort; we don't support nested splits.
+                return result;
+            }
+            m_bridge = it->second[0];
+        }
+
+        // q_id for the bridge quad: 4 sub-quads get nextQIdx..+3,
+        // bridge gets nextQIdx+4.
+        unsigned int bridge_q_id = nextQIdx + 4;
+
+        // Update the 2 half-edges of the bridge edge so that the
+        // bridge quad appears as the second quad (info[2]).
+        auto updateHalfEdge = [&](unsigned int p1, unsigned int p2) {
+            unsigned int a = p1, b = p2;
+            if (a > b) std::swap(a, b);
+            QuadEdge ke(a, b);
+            auto it = MapEdges.find(ke);
+            if (it != MapEdges.end() && it->second[2] == std::numeric_limits<unsigned int>::max()) {
+                it->second[2] = bridge_q_id;
+            }
+        };
+        updateHalfEdge(e0, m_bridge);
+        updateHalfEdge(m_bridge, e1);
+
+        // Add 3 new edges for the bridge quad (the side opposite
+        // the shared bridge edge).
+        auto addBridgeEdge = [&](unsigned int p1, unsigned int p2) {
+            unsigned int a = p1, b = p2;
+            if (a > b) std::swap(a, b);
+            QuadEdge ke(a, b, true);
+            auto it = MapEdges.find(ke);
+            if (it == MapEdges.end()) {
+                MapEdges.emplace(ke, EdgeInfo(0, bridge_q_id,
+                    std::numeric_limits<unsigned int>::max()));
+            } else if (it->second[2] == std::numeric_limits<unsigned int>::max()) {
+                it->second[2] = bridge_q_id;
+            } else if (it->second[1] == std::numeric_limits<unsigned int>::max()) {
+                it->second[1] = bridge_q_id;
+            }
+        };
+        addBridgeEdge(e1, e1_ext_idx);
+        addBridgeEdge(e1_ext_idx, e0_ext_idx);
+        addBridgeEdge(e0_ext_idx, e0);
+
+        // Build the 5 new Quadrants. The 4 sub-quads come from
+        // `new_eles`; the bridge quad has corners (e0, e1, e1_ext,
+        // e0_ext) traversed CCW.
+        unsigned short ref_level = (unsigned short)(q.getRefinementLevel() + 1);
+
+        for (unsigned int i = 0; i < 4; ++i) {
+            Quadrant sq(new_eles[i], ref_level, nextQIdx++);
+            result.push_back(std::move(sq));
+        }
+
+        vector<unsigned int> bridge_corners = {e0, e1, e1_ext_idx, e0_ext_idx};
+        Quadrant bq(bridge_corners, ref_level, nextQIdx++);
+        result.push_back(std::move(bq));
+
+        // Issue #3 (TUSQH §3.4): drop the stale MapEdges entry for
+        // the FULL bridge edge (e0, e1). After SplitVisitor + bridge
+        // split, the edge is fully represented by its two halves:
+        //   - (e0, m_bridge)  → SW sub-quad vs. bridge quad
+        //   - (m_bridge, e1)  → SE sub-quad vs. bridge quad
+        // Keeping the full edge would leave `info[1]` pointing to the
+        // original (now-removed) quad `q`, which is stale and would
+        // confuse the downstream BFS in `resolveArchipelagos`.
+        {
+            unsigned int a = e0, b = e1;
+            if (a > b) std::swap(a, b);
+            MapEdges.erase(QuadEdge(a, b));
+        }
+
+        return result;
+    }
+
+    //--------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------------
+
+    Point3D Mesher::computeExteriorDirection(const Quadrant &q,
+                                              unsigned int bridgeEdgeIdx,
+                                              const vector<MeshPoint> &points) const
+    {
+        Point3D zero(0.0, 0.0, 0.0);
+        const vector<unsigned int> &pi = q.getPointIndex();
+        if (bridgeEdgeIdx > 3 || pi.size() != 4) return zero;
+
+        const unsigned int e0 = pi[bridgeEdgeIdx];
+        const unsigned int e1 = pi[(bridgeEdgeIdx + 1) % 4];
+
+        const Point3D &p_e0 = points[e0].getPoint();
+        const Point3D &p_e1 = points[e1].getPoint();
+        Point3D mid_bridge = (p_e0 + p_e1) * 0.5;
+
+        // Quad centroid = mean of the 4 corners. The interior
+        // direction is from the bridge edge midpoint to the centroid;
+        // the exterior direction is its negation, normalised.
+        Point3D centroid(0.0, 0.0, 0.0);
+        for (unsigned int i = 0; i < 4; ++i) {
+            centroid += points[pi[i]].getPoint();
+        }
+        centroid *= 0.25;
+
+        Point3D dir_interior = centroid - mid_bridge;
+        double H = dir_interior.Norm();
+        if (H < 1e-12) return zero;  // degenerate quad
+
+        return (-dir_interior) / H;
+    }
+
+    //--------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------------
+
+    // Paper-faithful: an "interior" cell of the cubical complex is one
+    // whose volume fraction is positive (AllInside) or whose winding
+    // numbers are ambiguous (Mixed, sits on the boundary). AllOutside
+    // cells are kept in Quadrants so MapEdges retains the topology
+    // between components, but they are skipped everywhere a mesh
+    // entity is needed.
+    bool Mesher::isInteriorCell(const Quadrant &q) {
+        switch (q.getWindingState()) {
+            case WindingState::AllInside:
+            case WindingState::Mixed:
+                return true;
+            case WindingState::AllOutside:
+            case WindingState::Unknown:
+            default:
+                return false;
+        }
+    }
+
+    //--------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------------
+
+    bool Mesher::isEdgeOnDomainBoundary(const QuadEdge &edge,
+                                        const Quadrant &adjacentQuad,
+                                        const Polyline &input,
+                                        unsigned int sampleSize,
+                                        double joinThreshold) const
+    {
+        // We need to know which edge index inside `adjacentQuad`
+        // corresponds to `edge`. The adjacentQuad is the quad that
+        // owns the side `info[1]` of this edge; `edge` is one of its
+        // four edges.
+        const vector<unsigned int> &pi = adjacentQuad.getPointIndex();
+        unsigned int edgeIdx = 4;
+        for (unsigned int i = 0; i < pi.size(); ++i) {
+            unsigned int a = pi[i];
+            unsigned int b = pi[(i + 1) % pi.size()];
+            if ((a == edge[0] && b == edge[1]) ||
+                (a == edge[1] && b == edge[0])) {
+                edgeIdx = i;
+                break;
+            }
+        }
+        if (edgeIdx == 4) return false;  // not actually adjacent
+
+        unsigned int s = SubgridSampler::sanitizeSampleSize(sampleSize);
+        if (s == 0) return false;
+
+        // Exterior direction (outward from the quad through this edge).
+        Point3D dir_ext_unit = computeExteriorDirection(
+            adjacentQuad, edgeIdx, points);
+        if (dir_ext_unit.Norm() < 1e-12) return false;
+
+        // Edge axis (along the edge).
+        const Point3D &p_a = points[edge[0]].getPoint();
+        const Point3D &p_b = points[edge[1]].getPoint();
+        double dx = p_b[0] - p_a[0];
+        double dy = p_b[1] - p_a[1];
+        double edgeLen = std::sqrt(dx * dx + dy * dy);
+        if (edgeLen <= 0.0) return false;
+        double ax = dx / edgeLen;
+        double ay = dy / edgeLen;
+
+        // Perpendicular thickness: use the quad perpendicular height H.
+        Point3D centroid(0.0, 0.0, 0.0);
+        for (unsigned int i = 0; i < pi.size(); ++i) {
+            centroid += points[pi[i]].getPoint();
+        }
+        centroid *= 0.25;
+        Point3D mid_edge = (p_a + p_b) * 0.5;
+        double H = (centroid - mid_edge).Norm();
+        if (H <= 0.0) H = edgeLen;
+        if (H <= 0.0) return false;
+
+        const double halfAlong = 0.5 * edgeLen;
+        const double stepAlong = edgeLen / static_cast<double>(s);
+        const double stepPerp  = H     / static_cast<double>(s);
+
+        // Sample s x s points in the fictitious rectangle of the edge,
+        // restricted to the +dir_ext half-plane (j index goes from 0
+        // to s-1, all positive offset along dir_ext).
+        double sum = 0.0;
+        unsigned int n = 0;
+        for (unsigned int i = 0; i < s; ++i) {
+            for (unsigned int j = 0; j < s; ++j) {
+                double u = -halfAlong + (i + 0.5) * stepAlong;
+                double v = (j + 0.5) * stepPerp;  // >= 0
+                double ex = dir_ext_unit[0];
+                double ey = dir_ext_unit[1];
+                double x = mid_edge[0] + u * ax + v * ex;
+                double y = mid_edge[1] + u * ay + v * ey;
+                Point3D sample(x, y, 0.0);
+                int wn = input.windingNumber(sample);
+                sum += static_cast<double>(wn);
+                ++n;
+            }
+        }
+        if (n == 0) return false;
+
+        double vf_exterior = sum / static_cast<double>(n);
+
+        // Strict semantics: vf_exterior < joinThreshold ⇔ the edge's
+        // exterior is mostly outside the domain ⇔ the edge sits on
+        // the global domain boundary.
+        return vf_exterior < joinThreshold;
+    }
+
+    //--------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------------
+
+    void Mesher::resolveArchipelagos(Polyline &input,
+                                      unsigned int sampleSize,
+                                      double joinThreshold,
+                                      unsigned int minComponentCells,
+                                      const string& name)
+    {
+        auto start_time = chrono::high_resolution_clock::now();
+
+        // ---- 0) Bridge-joining loop ----
+        // TUSQH paper §3.4 step 3: "For any pair of connected
+        // components, if the edges that connect them are interior
+        // to the geometry, the components are joined using templates
+        // along those edges."
+        //
+        // Paper-faithful implementation (feature/paper-faithful-bridge):
+        //
+        // The cubical complex is the full background grid kept in
+        // `Quadrants` (see Step 1 of this branch: AllOutside cells
+        // are no longer dropped). AllOutside cells are invisible to
+        // the BFS (`isInteriorCell` returns false) but they keep the
+        // edges in MapEdges intact, so the algorithm can find pairs
+        // of interior components whose separation is a chain of
+        // exterior cells.
+        //
+        // Each iteration:
+        //   A) BFS over interior cells (AllInside + Mixed) using the
+        //      preserved MapEdges topology. This assigns a component
+        //      label to every interior quad.
+        //   B) For each edge in MapEdges where BOTH sides are interior
+        //      quads in DIFFERENT components, with interior sub-cell
+        //      VF (>= joinThreshold) and NOT on the global domain
+        //      boundary (Issue #1), perform a 1-to-5 split on the
+        //      quad on side info[1]. The bridge quad extends OUTWARD
+        //      from info[1]'s centroid toward info[2]'s centroid,
+        //      which is on the other side of the shared edge — the
+        //      bridge quad lands ON info[2]'s territory, connecting
+        //      the two components.
+        //   C) Re-compute sub-cell VFs so the new bridge quads'
+        //      outer edges can be evaluated in the next iteration.
+        //
+        // Repeat until no new bridges are added or maxBridgeIterations
+        // is reached. The iteration cap prevents runaway growth on
+        // pathological inputs.
+        const int maxBridgeIterations = 5;
+        int totalBridgesAdded = 0;
+
+        // q_id counter for new bridge quads. Start at one past the
+        // largest existing q_id so we don't collide.
+        unsigned int nextQIdx = 0;
+        for (auto& q : Quadrants) {
+            unsigned int qi = q.getIndex();
+            if (qi != std::numeric_limits<unsigned int>::max() && qi + 1 > nextQIdx) {
+                nextQIdx = qi + 1;
+            }
+        }
+
+        for (int bridgeIter = 0; bridgeIter < maxBridgeIterations; ++bridgeIter) {
+            // Refresh sub-cell VFs so the new edges from the previous
+            // iteration can be considered. (No-op on iter 0 since
+            // the caller has already computed them.)
+            if (bridgeIter > 0) {
+                computeSubcellVolumeFractions(input, sampleSize, joinThreshold);
+            }
+
+            // Build q_id -> vector index lookup for the current
+            // Quadrants vector.
+            std::unordered_map<unsigned int, unsigned int> qIdToIdx;
+            qIdToIdx.reserve(Quadrants.size() * 2);
+            for (unsigned int qi = 0; qi < Quadrants.size(); ++qi) {
+                qIdToIdx[Quadrants[qi].getIndex()] = qi;
+            }
+
+            // ---- A) BFS over the FULL cubical complex ----
+            // Per the paper §3.4, components are detected over the
+            // background grid (which includes AllOutside cells).
+            // Treating AllOutside cells as BFS nodes lets the BFS hop
+            // across chains of exterior cells and identify true
+            // connected regions. The BFS labels EVERY cell, so two
+            // interior cells separated only by an exterior corridor
+            // end up in the SAME component — which is the correct
+            // paper-faithful interpretation.
+            vector<int> compOfQuad(Quadrants.size(), -1);
+            int numComponents = 0;
+            for (unsigned int start = 0; start < Quadrants.size(); ++start) {
+                if (compOfQuad[start] != -1) continue;
+                std::queue<unsigned int> q;
+                q.push(start);
+                compOfQuad[start] = numComponents;
+                while (!q.empty()) {
+                    unsigned int qi = q.front(); q.pop();
+                    const auto& pi = Quadrants[qi].getPointIndex();
+                    for (unsigned int e = 0; e < pi.size(); ++e) {
+                        unsigned int a = pi[e];
+                        unsigned int b = pi[(e + 1) % pi.size()];
+                        if (a > b) std::swap(a, b);
+                        QuadEdge ke(a, b);  // default ctor sorts
+                        auto it = MapEdges.find(ke);
+                        if (it == MapEdges.end()) continue;
+                        const EdgeInfo& info = it->second;
+                        for (unsigned int k = 1; k <= 2; ++k) {
+                            unsigned int otherQId = info[k];
+                            if (otherQId == std::numeric_limits<unsigned int>::max()) continue;
+                            auto itMap = qIdToIdx.find(otherQId);
+                            if (itMap == qIdToIdx.end()) continue;
+                            unsigned int otherIdx = itMap->second;
+                            if (compOfQuad[otherIdx] != -1) continue;
+                            compOfQuad[otherIdx] = numComponents;
+                            q.push(otherIdx);
+                        }
+                    }
+                }
+                ++numComponents;
+            }
+
+            // ---- B) Bridge candidate collection ----
+            // For each MapEdge whose BOTH sides are interior quads in
+            // DIFFERENT components, with interior sub-cell VF and NOT
+            // on the global domain boundary, add a 1-to-5 split. The
+            // bridge quad extends OUTWARD from info[1]'s centroid,
+            // across the shared edge into info[2]'s territory — this
+            // is what makes the two components join.
+            vector<QuadEdge> bridgeEdges;
+            int filteredBoundary = 0;
+            for (const auto& entry : MapEdges) {
+                const EdgeInfo& info = entry.second;
+                // Both sides must be valid quads (NOT exposed edge).
+                if (info[1] == std::numeric_limits<unsigned int>::max()) continue;
+                if (info[2] == std::numeric_limits<unsigned int>::max()) continue;
+                auto it1 = qIdToIdx.find(info[1]);
+                auto it2 = qIdToIdx.find(info[2]);
+                if (it1 == qIdToIdx.end() || it2 == qIdToIdx.end()) continue;
+                unsigned int qi1 = it1->second;
+                unsigned int qi2 = it2->second;
+                // Both sides must be interior cells.
+                if (!isInteriorCell(Quadrants[qi1])) continue;
+                if (!isInteriorCell(Quadrants[qi2])) continue;
+                // They must be in DIFFERENT components.
+                if (compOfQuad[qi1] == compOfQuad[qi2]) continue;
+                // The edge's fictitious cell must be interior (>= threshold).
+                auto vfIt = mEdgeSubcellVF.find(entry.first);
+                if (vfIt == mEdgeSubcellVF.end()) continue;
+                if (vfIt->second.volumeFraction < joinThreshold) continue;
+                // Issue #1: edge must NOT be on the global domain
+                // boundary (the other side is genuinely outside the
+                // geometry). In that case adding a bridge would land
+                // a quad in true exterior.
+                if (isEdgeOnDomainBoundary(entry.first, Quadrants[qi1],
+                                           input, sampleSize, joinThreshold)) {
+                    ++filteredBoundary;
+                    continue;
+                }
+                bridgeEdges.push_back(entry.first);
+            }
+
+            if (filteredBoundary > 0) {
+                cout << "    [bridge iter " << bridgeIter
+                     << "] filtered " << filteredBoundary
+                     << " boundary edges (domain boundary)\n";
+            }
+
+            if (bridgeEdges.empty()) break;
+
+            int bridgesThisIter = 0;
+            for (const auto& ke : bridgeEdges) {
+                auto meIt = MapEdges.find(ke);
+                if (meIt == MapEdges.end()) continue;
+                unsigned int q_id = meIt->second[1];
+                if (q_id == std::numeric_limits<unsigned int>::max()) continue;
+
+                auto qiIt = qIdToIdx.find(q_id);
+                if (qiIt == qIdToIdx.end()) continue;
+                unsigned int qi = qiIt->second;
+
+                // Locate the edge index in the quad's corner list.
+                const auto& pi = Quadrants[qi].getPointIndex();
+                unsigned int bridgeEdgeIdx = 4;
+                for (unsigned int i = 0; i < 4; ++i) {
+                    unsigned int p1 = pi[i];
+                    unsigned int p2 = pi[(i + 1) % 4];
+                    if ((p1 == ke[0] && p2 == ke[1]) ||
+                        (p1 == ke[1] && p2 == ke[0])) {
+                        bridgeEdgeIdx = i;
+                        break;
+                    }
+                }
+                if (bridgeEdgeIdx == 4) continue;
+
+                // Perform the 1-to-5 split.
+                vector<Quadrant> newQuads = bridgeSplitAtEdge(
+                    Quadrants[qi], bridgeEdgeIdx, sampleSize, nextQIdx);
+                if (newQuads.empty()) continue;
+
+                // Replace the original quad with the first new quad
+                // and append the rest.
+                Quadrants[qi] = std::move(newQuads[0]);
+                for (unsigned int k = 1; k < newQuads.size(); ++k) {
+                    Quadrants.push_back(std::move(newQuads[k]));
+                }
+
+                // Classify the new bridge quad (the 5th, last one) so
+                // its WindingState is set. The 4 sub-quads inherit
+                // their winding from the parent quad's area (they're
+                // inside it, so their VFs are subsets), so they don't
+                // strictly need re-classification — but for safety
+                // (e.g. when the parent had unknown winding) we
+                // classify all 5.
+                //
+                // This is what makes the BFS in the next iteration see
+                // the bridge quad as part of the component it was
+                // added to connect. Without classification the quad
+                // has Unknown winding, which is treated as exterior,
+                // and the BFS drops it.
+                if (!Quadrants.empty()) {
+                    WindingNumberVisitor wnv(sampleSize);
+                    wnv.setPolyline(&input);
+                    wnv.setPoints(&points);
+                    // Classify the last 5 (or however many bridge quads
+                    // are in this batch). Each newQuads entry
+                    // corresponds to a quadrant now in Quadrants.
+                    const unsigned int startIdx = Quadrants.size() - (unsigned int)newQuads.size();
+                    for (unsigned int k = startIdx; k < Quadrants.size(); ++k) {
+                        Quadrants[k].accept(&wnv);
+                    }
+                }
+                ++bridgesThisIter;
+            }
+
+            if (bridgesThisIter == 0) break;
+            totalBridgesAdded += bridgesThisIter;
+
+            cout << "    [bridge iter " << bridgeIter
+                 << "] added " << bridgesThisIter
+                 << " bridges (total=" << totalBridgesAdded << ")\n";
+        }
+
+        // ---- 1) Find connected components of the quadtree ----
+        // Final pass (used for the small-component drop below and for
+        // the "numComponents" reported in the summary). Same logic as
+        // the inner BFS above: full cubical complex BFS, all cells
+        // are labeled.
+        vector<int> compOfQuad(Quadrants.size(), -1);
+        std::unordered_map<unsigned int, unsigned int> qIdToIdx;
+        qIdToIdx.reserve(Quadrants.size() * 2);
+        for (unsigned int qi = 0; qi < Quadrants.size(); ++qi) {
+            qIdToIdx[Quadrants[qi].getIndex()] = qi;
+        }
+        int numComponents = 0;
+
+        for (unsigned int start = 0; start < Quadrants.size(); ++start) {
+            if (compOfQuad[start] != -1) continue;
+            // BFS over quads via shared edges, full cubical complex
+            // (both interior and AllOutside cells).
+            std::queue<unsigned int> q;
+            q.push(start);
+            compOfQuad[start] = numComponents;
+            while (!q.empty()) {
+                unsigned int qi = q.front(); q.pop();
+                const auto& pi = Quadrants[qi].getPointIndex();
+                for (unsigned int e = 0; e < pi.size(); ++e) {
+                    unsigned int a = pi[e];
+                    unsigned int b = pi[(e + 1) % pi.size()];
+                    // MapEdges stores the canonical (sorted) key, so
+                    // we must sort a/b before constructing the key.
+                    if (a > b) std::swap(a, b);
+                    QuadEdge ke(a, b);  // default ctor sorts
+                    auto it = MapEdges.find(ke);
+                    if (it == MapEdges.end()) continue;
+                    const EdgeInfo& info = it->second;
+                    for (unsigned int k = 1; k <= 2; ++k) {
+                        unsigned int otherQId = info[k];
+                        if (otherQId == std::numeric_limits<unsigned int>::max()) continue;
+                        auto itMap = qIdToIdx.find(otherQId);
+                        if (itMap == qIdToIdx.end()) continue;
+                        unsigned int otherIdx = itMap->second;
+                        if (compOfQuad[otherIdx] != -1) continue;
+                        compOfQuad[otherIdx] = numComponents;
+                        q.push(otherIdx);
+                    }
+                }
+            }
+            ++numComponents;
+        }
+
+        // ---- 2) Drop "small" components ----
+        // Per the paper §3.4: "The remaining connected components that
+        // contain fewer than a user-defined number of highest-
+        // dimensional cells are removed." Components are computed
+        // over the full cubical complex (interior + AllOutside),
+        // so the size is the total number of cells in the component.
+        // Cells that are NOT interior (AllOutside) are dropped from
+        // the output regardless of component membership, since they
+        // were only preserved for the BFS / bridge topology.
+        vector<int> compSize(numComponents, 0);
+        for (unsigned int qi = 0; qi < Quadrants.size(); ++qi) {
+            if (compOfQuad[qi] >= 0) compSize[compOfQuad[qi]]++;
+        }
+
+        int droppedQuads = 0;
+        vector<bool> keepQuad(Quadrants.size(), false);
+        for (unsigned int qi = 0; qi < Quadrants.size(); ++qi) {
+            // Keep: interior cell, in a visited component, component
+            // size >= min. AllOutside cells in kept components are
+            // dropped from the output (they were preserved only for
+            // the BFS / bridge topology).
+            if (compOfQuad[qi] >= 0 &&
+                compSize[compOfQuad[qi]] >= (int)minComponentCells &&
+                isInteriorCell(Quadrants[qi])) {
+                keepQuad[qi] = true;
+            }
+        }
+
+        // Compact the Quadrants vector and rebuild MapEdges from kept
+        // quads. We deliberately re-use EdgeVisitor so the resulting
+        // edge map matches what the rest of the pipeline expects.
+        vector<Quadrant> kept;
+        kept.reserve(Quadrants.size());
+        for (unsigned int qi = 0; qi < Quadrants.size(); ++qi) {
+            if (keepQuad[qi]) kept.push_back(Quadrants[qi]);
+        }
+        droppedQuads = (int)(Quadrants.size() - kept.size());
+
+        // Rebuild MapEdges from scratch using the kept quads. We have
+        // to renumber q_ids so that EdgeInfo can still reference them
+        // by index. The simplest stable mapping is "old index -> new
+        // index" if the quad was kept.
+        for (unsigned int oldIdx = 0; oldIdx < Quadrants.size(); ++oldIdx) {
+            if (keepQuad[oldIdx]) {
+                unsigned int newIdx = (unsigned int)kept.size();
+                // Quadrant::q_id is set at construction time. We
+                // bypass immutability by relying on the fact that the
+                // pipeline only uses q_id for VTK/debug, while
+                // adjacency is by vector position. So we just leave
+                // q_id as-is.
+                (void)newIdx;
+            }
+        }
+
+        // Rebuild MapEdges.
+        map<QuadEdge, EdgeInfo> newMapEdges;
+        for (unsigned int newIdx = 0; newIdx < kept.size(); ++newIdx) {
+            const auto& pi = kept[newIdx].getPointIndex();
+            for (unsigned int e = 0; e < pi.size(); ++e) {
+                unsigned int a = pi[e];
+                unsigned int b = pi[(e + 1) % pi.size()];
+                QuadEdge ke(a, b, true);
+                auto it = newMapEdges.find(ke);
+                if (it == newMapEdges.end()) {
+                    newMapEdges.emplace(ke, EdgeInfo(0, newIdx,
+                        std::numeric_limits<unsigned int>::max()));
+                } else {
+                    it->second[2] = newIdx;
+                }
+            }
+        }
+        MapEdges = std::move(newMapEdges);
+        Quadrants = std::move(kept);
+
+        // Rebuild points[i].elements for the (now smaller) Quadrants
+        // vector. linkElementsToNodes() will be called by the
+        // pipeline downstream.
+        for (auto& v : points) v.clearElements();
+        for (unsigned int qi = 0; qi < Quadrants.size(); ++qi) {
+            for (unsigned int vIdx : Quadrants[qi].getPointIndex()) {
+                if (vIdx < points.size()) points[vIdx].addElement(qi);
+            }
+        }
+
+        // ---- 3) Drop edge sub-cell VF entries whose quads vanished ----
+        vector<QuadEdge> stale;
+        for (const auto& entry : mEdgeSubcellVF) {
+            const QuadEdge& ke = entry.first;
+            auto it = MapEdges.find(ke);
+            if (it == MapEdges.end()) stale.push_back(ke);
+        }
+        for (const auto& ke : stale) mEdgeSubcellVF.erase(ke);
+
+#if (VTKOUT==true)
+        {
+            string tmp_name = name + "_postarchipelago";
+            std::shared_ptr<FEMesh> post_mesh = make_shared<FEMesh>();
+            // Guard: saveOutputMesh accesses tmp_Quadrants[0] (line
+            // 1623) without an empty check, so it would segfault if
+            // all components were dropped by -L. This is a pre-existing
+            // issue in the mesher that becomes reachable now that the
+            // Issue #1 filter can leave Quadrants empty.
+            if (!Quadrants.empty()) {
+                saveOutputMesh(post_mesh, points, Quadrants);
+                Services::WriteVTK(tmp_name, post_mesh);
+                cout << "  Wrote: " << tmp_name << ".vtk\n";
+            } else {
+                cout << "  Skipped: " << tmp_name
+                     << ".vtk (all components dropped, Quadrants empty)\n";
+            }
+        }
+#endif
+
+        auto end_time = chrono::high_resolution_clock::now();
+        cout << "    * resolveArchipelagos: " << numComponents
+             << " components, " << totalBridgesAdded << " bridges added, "
+             << droppedQuads
+             << " small-component quads dropped (min=" << minComponentCells
+             << ") in "
+             << std::chrono::duration_cast<chrono::milliseconds>(end_time-start_time).count()
+             << " ms" << endl;
+    }
+
+    //--------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------------
+
+    // Heuristic for the TUSQH coarse-grid bug. If the quadtree starts
+    // with `coarseThreshold` or fewer root cells and the polyline has
+    // at least `minSegmentsForTrigger` segments, the TUSQH winding
+    // criterion can undersample the giant initial cells (e.g. with the
+    // default -N 2 = 4 samples per cell, a 50x50 cell is classified as
+    // AllInside or AllOutside and never subdivided). Pre-refine
+    // uniformly to `baseLevel` using the legacy `generateQuadtreeMesh`
+    // so TUSQH has enough small cells to be meaningful.
+    //
+    // The pre-refinement is bounded: it only triggers when the initial
+    // grid is very coarse (default: <= 2 cells), the polyline is
+    // complex enough (default: >= 100 segments; this excludes simple
+    // regression cases like unit_square.poly where TUSQH legitimately
+    // produces a single cell), and respects the requested `maxDepth`
+    // (capped at baseLevel, so the TUSQH loop still has headroom to
+    // subdivide further if needed).
+    bool Mesher::preRefineForTusqh(Polyline &input,
+                                   unsigned int maxDepth,
+                                   list<RefinementRegion *> &all_reg,
+                                   const string &name,
+                                   const bool &debugging,
+                                   bool Aliasing,
+                                   unsigned short coarseThreshold,
+                                   unsigned short baseLevel,
+                                   unsigned int minSegmentsForTrigger) {
+        if (Quadrants.size() > coarseThreshold) {
+            return false;
+        }
+        if (input.getEdges().size() < minSegmentsForTrigger) {
+            return false;
+        }
+        unsigned short effectiveBaseLevel = baseLevel;
+        if (maxDepth < effectiveBaseLevel) {
+            effectiveBaseLevel = static_cast<unsigned short>(maxDepth);
+        }
+        if (effectiveBaseLevel == 0) {
+            return false;
+        }
+
+        cout << "    * preRefineForTusqh: initial grid has "
+             << Quadrants.size() << " cell(s) (<= " << coarseThreshold
+             << ") and input has " << input.getEdges().size()
+             << " segments (>= " << minSegmentsForTrigger
+             << "); pre-refining uniformly to level " << effectiveBaseLevel
+             << " to avoid TUSQH winding undersampling\n";
+
+        unsigned int pre_q_idx = Quadrants.size();
+        generateQuadtreeMesh(effectiveBaseLevel, input, all_reg, name,
+                             0, effectiveBaseLevel, debugging,
+                             pre_q_idx, Aliasing);
+
+        cout << "    * preRefineForTusqh: quadtree now has "
+             << Quadrants.size() << " cells before TUSQH subdivision\n";
+
+        return true;
     }
 }

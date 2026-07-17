@@ -29,21 +29,33 @@ namespace Clobscode
 {
 
     //MeshPoint::MeshPoint():outsidechecked(false), projected(false),feature(false),inside(false),maxdistance(std::numeric_limits<double>::max()){
-    MeshPoint::MeshPoint(): state(STATEMASK),maxdistance(std::numeric_limits<double>::max()){
+    MeshPoint::MeshPoint(): state(STATEMASK),maxdistance(std::numeric_limits<double>::max()),
+                            mSubcellSampleSize(0), mSubcellVolumeFraction(0.0),
+                            mHasSubcellVolumeFraction(false), mSubcellIsInterior(false){
         //we assume that every point is outside by default.(inside)
-        //checking if a point is outside or not is a very expensive 
+        //checking if a point is outside or not is a very expensive
         //operation, so we try to do it only once (outsidechecked)
 	}
-	
+
     //MeshPoint::MeshPoint(const Point3D &p):outsidechecked(false), projected(false),feature(false),inside(false),maxdistance(std::numeric_limits<double>::max()){
-    MeshPoint::MeshPoint(const Point3D &p):point(p),state(STATEMASK),maxdistance(std::numeric_limits<double>::max()){
+    MeshPoint::MeshPoint(const Point3D &p):point(p),state(STATEMASK),maxdistance(std::numeric_limits<double>::max()),
+                                  mSubcellSampleSize(0), mSubcellVolumeFraction(0.0),
+                                  mHasSubcellVolumeFraction(false), mSubcellIsInterior(false){
 //          point = p;
     }
-	
+
 	MeshPoint::~MeshPoint(){
-		
+
 	}
-		
+
+    void MeshPoint::computeSubcellVolumeFraction(const std::vector<double>& wn) {
+        mSubcellWindingNumbers = wn;
+        double sum = 0.0;
+        for (double v : wn) sum += v;
+        mSubcellVolumeFraction = wn.empty() ? 0.0 : sum / static_cast<double>(wn.size());
+        mHasSubcellVolumeFraction = true;
+    }
+
     std::ostream& operator<<(std::ostream& o, const MeshPoint &p){
 		o << p.getPoint();
 		return o;

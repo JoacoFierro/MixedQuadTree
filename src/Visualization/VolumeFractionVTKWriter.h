@@ -28,12 +28,17 @@
 
 #include <string>
 #include <vector>
+#include <map>
+
+#include "../SubcellVFData.h"
 
 namespace Clobscode
 {
     class Quadrant;
     class MeshPoint;
     class Polyline;
+    class QuadEdge;
+    class EdgeInfo;
 
     class VolumeFractionVTKWriter
     {
@@ -56,6 +61,25 @@ namespace Clobscode
         static bool writeWindingState(const std::string& name,
                                       const std::vector<Quadrant>& quadrants,
                                       const std::vector<MeshPoint>& points);
+
+        // TUSQH §3.3 sub-cell volume fractions. Writes a single VTK
+        // file containing, as POINT_DATA on the existing quadtree
+        // vertices: subcell_vf, subcell_is_interior, subcell_sample_size.
+        // As CELL_DATA on the quadtree quads: same metrics (the per-quad
+        // subcell VF is the mean of the four corner vertices).
+        static bool writeSubcellVertexVF(const std::string& name,
+                                         const std::vector<Quadrant>& quadrants,
+                                         const std::vector<MeshPoint>& points,
+                                         double joinThreshold);
+
+        // Writes the per-edge sub-cell volume fraction as a separate
+        // UNSTRUCTURED_GRID of line cells (VTK_LINE = 3). Each line's
+        // scalar is the edge's subcell VF.
+        static bool writeSubcellEdgeVF(const std::string& name,
+                                       const std::vector<Quadrant>& quadrants,
+                                       const std::vector<MeshPoint>& points,
+                                       const std::map<QuadEdge, EdgeSubcellVFData>& edgeSubcellVF,
+                                       double joinThreshold);
     };
 }
 

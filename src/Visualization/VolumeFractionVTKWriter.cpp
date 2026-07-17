@@ -28,11 +28,13 @@
 #include "../MeshPoint.h"
 #include "../Polyline.h"
 #include "../Point3D.h"
+#include "../QuadEdge.h"
 
 #include <iostream>
 #include <fstream>
 #include <vector>
 #include <string>
+#include <map>
 
 using std::vector;
 using std::string;
@@ -287,6 +289,191 @@ namespace Clobscode
         for (const auto& q : quadrants) {
             fprintf(f, "%u\n", q.getRefinementLevel());
         }
+
+        fclose(f);
+        std::cout << "  Wrote: " << vol_name << "\n";
+        return true;
+    }
+
+    //--------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------------
+    bool VolumeFractionVTKWriter::writeSubcellVertexVF(const std::string& name,
+                                                       const std::vector<Quadrant>& quadrants,
+                                                       const std::vector<MeshPoint>& points,
+                                                       double joinThreshold)
+    {
+        if (quadrants.empty() || points.empty()) {
+            std::cerr << "No data to write for subcell vertex VF\n";
+            return false;
+        }
+
+        string vol_name = name + "_subcell_vertex.vtk";
+        FILE* f = fopen(vol_name.c_str(), "wt");
+        if (!f) {
+            std::cerr << "Cannot open file: " << vol_name << "\n";
+            return false;
+        }
+
+        fprintf(f, "# vtk DataFile Version 2.0\n");
+        fprintf(f, "TUSQH Sub-cell Vertex Volume Fractions\n");
+        fprintf(f, "ASCII\n\n");
+
+        fprintf(f, "DATASET UNSTRUCTURED_GRID\n");
+        fprintf(f, "POINTS %u float\n", (unsigned int)points.size());
+        for (unsigned int i = 0; i < points.size(); i++) {
+            const Point3D& p = points[i].getPoint();
+            fprintf(f, "%+1.8E %+1.8E %+1.8E\n", p[0], p[1], p[2]);
+        }
+
+        unsigned int num_cells = quadrants.size();
+        unsigned int connectivity = 0;
+        for (const auto& q : quadrants) {
+            const auto& idx = q.getPointIndex();
+            connectivity += idx.size() + 1;
+        }
+        fprintf(f, "\nCELLS %u %u\n", num_cells, connectivity);
+        for (const auto& q : quadrants) {
+            const auto& idx = q.getPointIndex();
+            fprintf(f, "%u", (unsigned int)idx.size());
+            for (auto i : idx) fprintf(f, " %u", i);
+            fprintf(f, "\n");
+        }
+
+        fprintf(f, "\nCELL_TYPES %u\n", num_cells);
+        for (unsigned int i = 0; i < num_cells; i++) {
+            if (i % 30 == 0) fprintf(f, "\n");
+            fprintf(f, "9 "); // VTK_QUAD
+        }
+
+        // ---- POINT_DATA on vertices ----
+        fprintf(f, "\n\nPOINT_DATA %u\n", (unsigned int)points.size());
+        fprintf(f, "SCALARS subcell_vf double 1\n");
+        fprintf(f, "LOOKUP_TABLE default\n");
+        for (unsigned int i = 0; i < points.size(); i++) {
+            if (points[i].hasSubcellVolumeFraction()) {
+                fprintf(f, "%+1.8E\n", points[i].getSubcellVolumeFraction());
+            } else {
+                fprintf(f, "%+1.8E\n", 0.0);
+            }
+        }
+
+        fprintf(f, "\nSCALARS subcell_is_interior int 1\n");
+        fprintf(f, "LOOKUP_TABLE default\n");
+        for (unsigned int i = 0; i < points.size(); i++) {
+            int v = 0;
+            if (points[i].hasSubcellVolumeFraction()) {
+                v = (points[i].getSubcellVolumeFraction() >= joinThreshold) ? 1 : 0;
+            }
+            fprintf(f, "%d\n", v);
+        }
+
+        fprintf(f, "\nSCALARS subcell_sample_size unsigned_int 1\n");
+        fprintf(f, "LOOKUP_TABLE default\n");
+        for (unsigned int i = 0; i < points.size(); i++) {
+            fprintf(f, "%u\n", points[i].getSubcellSampleSize());
+        }
+
+        // ---- CELL_DATA on quads (mean of the four corners) ----
+        fprintf(f, "\nCELL_DATA %u\n", num_cells);
+        fprintf(f, "SCALARS subcell_vf_corner_mean double 1\n");
+        fprintf(f, "LOOKUP_TABLE default\n");
+        for (const auto& q : quadrants) {
+            const auto& idx = q.getPointIndex();
+            if (idx.empty()) { fprintf(f, "0.0\n"); continue; }
+            double sum = 0.0;
+            unsigned int cnt = 0;
+            for (auto i : idx) {
+                if (points[i].hasSubcellVolumeFraction()) {
+                    sum += points[i].getSubcellVolumeFraction();
+                }
+                cnt++;
+            }
+            double mean = (cnt == 0) ? 0.0 : sum / (double)cnt;
+            fprintf(f, "%+1.8E\n", mean);
+        }
+
+        fclose(f);
+        std::cout << "  Wrote: " << vol_name << "\n";
+        return true;
+    }
+
+    //--------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------------
+    bool VolumeFractionVTKWriter::writeSubcellEdgeVF(const std::string& name,
+                                                     const std::vector<Quadrant>& quadrants,
+                                                     const std::vector<MeshPoint>& points,
+                                                     const std::map<QuadEdge, EdgeSubcellVFData>& edgeSubcellVF,
+                                                     double joinThreshold)
+    {
+        if (edgeSubcellVF.empty() || points.empty()) {
+            std::cerr << "No edge data to write for subcell edge VF\n";
+            return false;
+        }
+
+        string vol_name = name + "_subcell_edge.vtk";
+        FILE* f = fopen(vol_name.c_str(), "wt");
+        if (!f) {
+            std::cerr << "Cannot open file: " << vol_name << "\n";
+            return false;
+        }
+
+        fprintf(f, "# vtk DataFile Version 2.0\n");
+        fprintf(f, "TUSQH Sub-cell Edge Volume Fractions\n");
+        fprintf(f, "ASCII\n\n");
+
+        // Use only the edges that have data. Build a local point list of
+        // their endpoints.
+        std::vector<unsigned int> edgePointIdx;     // index in points
+        std::vector<unsigned int> edgePointLocalId; // index in edgePointIdx
+        std::map<unsigned int, unsigned int> globalToLocal;
+
+        auto pushPoint = [&](unsigned int globalIdx) -> unsigned int {
+            auto it = globalToLocal.find(globalIdx);
+            if (it != globalToLocal.end()) return it->second;
+            unsigned int local = (unsigned int)edgePointIdx.size();
+            edgePointIdx.push_back(globalIdx);
+            globalToLocal[globalIdx] = local;
+            return local;
+        };
+
+        struct EdgeRow { unsigned int a; unsigned int b; double vf; int interior; };
+        std::vector<EdgeRow> rows;
+        rows.reserve(edgeSubcellVF.size());
+        for (const auto& entry : edgeSubcellVF) {
+            const QuadEdge& e = entry.first;
+            unsigned int a = pushPoint(e[0]);
+            unsigned int b = pushPoint(e[1]);
+            rows.push_back({a, b, entry.second.volumeFraction,
+                            entry.second.volumeFraction >= joinThreshold ? 1 : 0});
+        }
+
+        fprintf(f, "DATASET UNSTRUCTURED_GRID\n");
+        fprintf(f, "POINTS %u float\n", (unsigned int)edgePointIdx.size());
+        for (unsigned int gi : edgePointIdx) {
+            const Point3D& p = points[gi].getPoint();
+            fprintf(f, "%+1.8E %+1.8E %+1.8E\n", p[0], p[1], p[2]);
+        }
+
+        fprintf(f, "\nCELLS %u %u\n", (unsigned int)rows.size(),
+                (unsigned int)rows.size() * 3);
+        for (const auto& r : rows) {
+            fprintf(f, "2 %u %u\n", r.a, r.b);
+        }
+
+        fprintf(f, "\nCELL_TYPES %u\n", (unsigned int)rows.size());
+        for (size_t i = 0; i < rows.size(); i++) {
+            if (i % 30 == 0) fprintf(f, "\n");
+            fprintf(f, "3 "); // VTK_LINE
+        }
+
+        fprintf(f, "\n\nCELL_DATA %u\n", (unsigned int)rows.size());
+        fprintf(f, "SCALARS subcell_vf double 1\n");
+        fprintf(f, "LOOKUP_TABLE default\n");
+        for (const auto& r : rows) fprintf(f, "%+1.8E\n", r.vf);
+
+        fprintf(f, "\nSCALARS subcell_is_interior int 1\n");
+        fprintf(f, "LOOKUP_TABLE default\n");
+        for (const auto& r : rows) fprintf(f, "%d\n", r.interior);
 
         fclose(f);
         std::cout << "  Wrote: " << vol_name << "\n";

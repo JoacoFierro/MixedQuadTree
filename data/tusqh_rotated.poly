@@ -1,0 +1,41 @@
+# TUSQH rotated test
+#
+# A single tilted (rotated) square inside the unit-square domain.
+# Goal: validate that computeExteriorDirection using the quad
+# centroid gives a correct +dir_ext direction when the quadtree
+# approximates a non-axis-aligned feature with axis-aligned cells.
+#
+# Geometry:
+#   - A single tilted square (30 degrees around its centroid (0.5, 0.5))
+#     with half-diagonal 0.3.
+#   - The square is small enough that the quadtree approximation
+#     creates axis-aligned "step" cells around its boundary.
+#
+# Expected behavior:
+#   - Quad centroid gives the correct +dir_ext direction for each
+#     axis-aligned quad (the quads are always axis-aligned in the
+#     quadtree).
+#   - The filter correctly removes bridges on the outer boundary
+#     of the polyline (winding = 0).
+#   - The output mesh approximates the tilted square.
+#
+# Notes:
+#   - In Triangle .poly format, CCW is the OUTER boundary (inside);
+#     CW is a HOLE. We list the four vertices in CCW order.
+4 2 0 0
+# Tilted square (CCW), rotated 30 degrees around its centroid (0.5, 0.5),
+# half-diagonal 0.3. Vertices in CCW order (increasing angle):
+#   angle  75° -> (0.5776, 0.7898)
+#   angle 165° -> (0.2102, 0.5776)
+#   angle 255° -> (0.4224, 0.2102)
+#   angle 345° -> (0.7898, 0.4224)
+1  0.5776  0.7898
+2  0.2102  0.5776
+3  0.4224  0.2102
+4  0.7898  0.4224
+4 0
+1  1 2
+2  2 3
+3  3 4
+4  4 1
+0

@@ -6,9 +6,33 @@
 > del ejecutable. Está pensado como apoyo para futuros *merges* entre ramas
 > (e.g. `develop-felipe` ↔ `develop` ↔ `master`).
 >
-> Auditado sobre la rama `develop-felipe` (HEAD `0940c2c using winding numbers
-> for quadtree`). Las referencias `archivo:línea` son absolutas dentro del repo
-> `MixedQuadTree`.
+> Auditado sobre la rama `feature/paper-faithful-bridge` (HEAD `d174e6c Union
+> Winding Numbers con Templates`, working tree sin commits nuevos). Las
+> referencias `archivo:línea` son absolutas dentro del repo `MixedQuadTree`.
+
+## 0. Documentación relacionada
+
+Esta guía cubre el **cómo** de la implementación. Para el **qué / por qué /
+resultados**, ver:
+
+- **`doc/WORK_SUMMARY.md`** — resumen maestro de la rama
+  `feature/paper-faithful-bridge`: objetivo, plan de 7 pasos, métricas finales
+  de Chesapeake Bay (549 interior cells, 110 components, 125 bridges).
+- **`doc/BUGS_FOUND.md`** — cada bug encontrado y arreglado (Issues #1-#7)
+  con `symptom → root cause → fix → verification`.
+- **`doc/FUTURE_WORK.md`** — TODOs pendientes categorizados P1-P5 (visual
+  ParaView, flag `-B`, 3D pinch, persistence diagrams, etc.).
+- **`doc/CURRENT_STATE.md`** — estado actual del branch: working tree dirty,
+  sin commits nuevos, listo para revisión.
+- **`doc/SESSION_TUSQH_BRIDGE_2026-07-15.md`** — log de la sesión que motivó
+  este trabajo.
+- **`doc/STEP_0..7_*.md`** — reportes detallados de cada uno de los 7 pasos.
+
+**Esta guía (§3.11.9) es la implementación paper-faithful, ya NO la
+limitación documentada previamente.** El algoritmo anterior solo consideraba
+aristas expuestas y producía quads aislados; el nuevo (Step 1 + Step 3
+rewrite) detecta componentes sobre el cubical complex completo y los une
+correctamente.
 
 ---
 
@@ -99,6 +123,10 @@ Definidos y parseados exclusivamente en `src/Main.cpp`. Resumen:
 | `-M d` | `unsigned int` | `tusqhExtraResolveDepth`     | `0`     | Iteraciones extra de TUSQH ("resolve pass") sobre celdas `Mixed` que llegan a `qrl == maxDepth`.     |
 | `-n s` | `unsigned int` | `mSampleSize`                 | `2`     | Tamaño de la grilla para el cálculo de **volume fraction** (post-proceso).                            |
 | `-s rl` | `unsigned short` | crea `RefinementInputSurfaceRegion` | n/a   | **No** relacionado con TUSQH ni winding: refina hasta `rl` las celdas que intersectan la superficie.  |
+| `-J` | bool        | `useSubgrid`                    | `false` | Activa sub-cell VF + archipelago resolution (paper §3.3+§3.4).                                       |
+| `-K s` | `unsigned int` | `subgridSampleSize`         | `2`     | Tamaño de la grilla s × s para muestreo sub-cell (independiente de `-n` y `-N`).                     |
+| `-F τ` | `double`     | `subgridJoinThreshold`         | `0.5`   | Umbral VF sub-cell. `VF ≥ τ` ⇒ vértice/arista "interior" candidato a puente.                          |
+| `-L n` | `unsigned int` | `subgridMinComponentCells`  | `5`     | Componentes con menos de `n` celdas se descartan en el resolver de archipiélagos.                    |
 
 Puntos exactos en `src/Main.cpp`:
 
@@ -264,6 +292,290 @@ materializar los 4 hijos de una celda `Mixed`
 (`src/Mesher.cpp:1840-1871, 1898-1921, 2108-2121`). El contrato es el
 mismo que en el pipeline clásico.
 
+### 3.11 Bridge-joining pipeline (TUSQH §3.3 + §3.4)
+
+Sub-cell volume fractions (vértices + aristas) y resolución de
+archipiélagos. Se ejecuta después del TUSQH principal pero antes del
+pipeline clásico (`removeOnSurfaceSafe`, etc.), porque necesita la
+conectividad completa del quadtree.
+
+#### 3.11.1 Activación y flags (`src/Main.cpp`)
+
+| Flag | Variable destino              | Default | Significado                                                                                          |
+|------|-------------------------------|---------|------------------------------------------------------------------------------------------------------|
+| `-J` | `useSubgrid`                  | `false` | Activa sub-cell VF + archipelago resolution (paper §3.3 + §3.4).                                     |
+| `-K s` | `subgridSampleSize`         | `2`     | Tamaño de la grilla `s × s` para muestreo sub-cell (no afecta a `-n` ni `-N`).                        |
+| `-F τ` | `subgridJoinThreshold` (double) | `0.5` | Umbral VF sub-cell. Vértices/aristas con `VF ≥ τ` se consideran "interiores" y pueden usarse como puente. |
+| `-L n` | `subgridMinComponentCells`  | `5`     | Componentes con menos de `n` celdas se descartan en el resolver de archipiélagos.                     |
+
+Parseo: `src/Main.cpp:96-107` (texto de ayuda) y el switch adyacente
+que rellena las cuatro variables. Se pasan a `Mesher::generateMesh` /
+`Mesher::refineMesh` justo después de los flags `-T -N -E -M -n`.
+
+#### 3.11.2 `computeSubcellVolumeFractions` (paper §3.3)
+
+Recorre todas las aristas y vértices de cada celda TUSQH, muestrea `s × s`
+dentro del **lado positivo** de la dirección exterior y guarda la
+promedio de winding numbers en `mEdgeSubcellVF` y `mVertexSubcellVF`
+(maps globales en `Mesher.h:288-305`).
+
+- Firma: `Mesher.h:165-176`.
+- Implementación: `Mesher.cpp:2876-2943`.
+- Salidas debug (sólo si `VTKOUT==true`):
+  - `<name>_subcell_vertex.vtk`: cada vértice con su `mVertexSubcellVF`.
+  - `<name>_subcell_edge.vtk`: cada arista con su `mEdgeSubcellVF`.
+
+#### 3.11.3 `bridgeSplitAtEdge` — creación de un puente
+
+Aplica el *template* de subdivisión del paper (Figura 7): cuando una
+arista tiene `mEdgeSubcellVF >= joinThreshold`, se subdivide la celda
+adyacente usando la dirección perpendicular a la arista hacia el
+**exterior** (no hacia el vecino), y se eliminan los hijos que
+quedarían dentro de ese lado.
+
+- Firma: `Mesher.h:178-189`.
+- Implementación: `Mesher.cpp:2969-3145`.
+
+Pasos clave:
+
+1. `computeExteriorDirection(quad, e0, e1)` (`Mesher.cpp:2969-2990`):
+   devuelve el vector unitario **+dir_ext** desde el *centroide del
+   quad* (no del edge opuesto). Esto es robusto frente a rotaciones
+   del quad y mantiene la semántica para quads no rectangulares
+   (defensa contra el Issue #2 del plan original).
+2. `splitAlongEdge(q, e0, e1, dir_ext)`: divide la celda en `k` capas
+   perpendiculares a `dir_ext`, conservando sólo los hijos cuya
+   posición proyectada sobre `dir_ext` está en el lado **negativo**
+   (es decir, los hijos "interiores" del quad).
+3. Limpia `MapEdges[QuadEdge(e0, e1)]` (Issue #3): la entrada previa
+   de la arista original queda obsoleta tras el split. Eliminarla
+   evita que el BFS en `resolveArchipelagos` use conectividad
+   fantasma.
+4. Devuelve `true` si el split amplió la celda (necesario para que el
+   resolver decida iterar de nuevo).
+
+#### 3.11.4 `isEdgeOnDomainBoundary` — filtro de Issue #1
+
+`Mesher.cpp:2992-3050`. Para una arista `(e0, e1)` con dirección
+exterior `+dir_ext` ya computada:
+
+1. Toma `s × s` puntos de muestra desplazados una distancia fija desde
+   el *midpoint* del edge hacia `+dir_ext`.
+2. Calcula `vf_ext = Σ wn / s²`.
+3. Si `vf_ext < joinThreshold` ⇒ descarta la arista como candidata a
+   puente (es arista de frontera del dominio, no une archipiélagos).
+
+Semántica **estricta** (`<`, no `≤`): una arista exactamente sobre la
+frontera (`vf_ext = 0`) siempre se descarta; una con `vf_ext`
+ligeramente positivo (e.g. `1/s²`) se conserva sólo si supera el
+umbral.
+
+#### 3.11.5 `resolveArchipelagos` — paper §3.4
+
+Orquesta el ciclo completo:
+
+```
+bucle iter (hasta que no haya progreso):
+  1. computeSubcellVolumeFractions(input, s, τ)
+  2. Construir grafo de componentes vía BFS sobre MapEdges
+  3. Para cada arista con mEdgeSubcellVF >= τ y
+     info[2] == maxRefinementLevel (es borde de componente):
+       3a. computeExteriorDirection(quad, e0, e1)
+       3b. isEdgeOnDomainBoundary(...) -> skip si vf_ext < τ
+       3c. bridgeSplitAtEdge(quad, e0, e1, dir_ext)
+       3d. Si split exitoso, marcar arista como puente
+  4. Recalcular componentes, descartar componentes con < L celdas
+salida: Quadrants contiene sólo las celdas de los componentes supervivientes
+```
+
+- Firma: `Mesher.h:179-189`.
+- Implementación: `Mesher.cpp:3286-3587`.
+- Logging: `Mesher.cpp:3571-3577` (componentes, puentes, drops,
+  tiempo). Cada iteración loggea `[bridge iter N] filtered X boundary
+  edges (domain boundary)`.
+
+#### 3.11.6 Guard contra segfault de Quadrants vacío (pre-existente)
+
+Antes del fix, `Mesher::saveOutputMesh` accedía a
+`tmp_Quadrants[0].getRefinementLevel()` sin verificar que el vector
+estuviera no-vacío (`Mesher.cpp:1623`). Cuando `-L` descartaba todas
+las componentes (caso `tusqh_figure14.poly -L 3`), el programa
+crasheaba con SIGSEGV. Se añadió un guard al inicio de
+`saveOutputMesh(vector<Quadrant>&)` (`Mesher.cpp:1622-1634`) que emite
+un mesh vacío sin tocar `tmp_Quadrants[0]`. El guard también
+beneficia las llamadas posteriores en `Mesher.cpp:138, 150, 165`
+(debug `_quads`, `_closeto`, `_remSur`) que tenían el mismo riesgo
+latente.
+
+#### 3.11.7 Pruebas (`scripts/test_bridge_clean_info.py`)
+
+Script de regresión que verifica:
+
+1. Exit code 0 (no segfault) en todos los casos.
+2. `cell count` del `_postarchipelago.vtk` (o ausencia correcta del
+   archivo cuando todos los componentes se descartan).
+3. Número inicial de componentes.
+4. Cantidad mínima de aristas filtradas (Issue #1).
+5. Índices de punto dentro de rango en cada celda (sanidad post-split).
+
+Casos cubiertos:
+
+- `data/unit_square.poly -a 3 -T -J -K 2 -F 0.5 -L 1`
+- `data/tusqh_small_feature.poly -a 2 -T -J -K 2 -F 0.5 -L 3`
+- `data/tusqh_figure14.poly -a 3 -T -J -K 2 -F 0.5 -L 3`
+- `data/tusqh_boundary_filter.poly -a 3 -T -J -K 2 -F 0.5 -L 1`
+  (regresión de Issue #1 con polilínea "L-shape")
+- `data/tusqh_rotated.poly -a 4 -T -J -K 2 -F 0.5 -L 1`
+  (regresión de Issue #2 con un cuadrado rotado)
+
+#### 3.11.8 Heurística `preRefineForTusqh` — fix del bug de grilla inicial muy gruesa
+
+Cuando el quadtree arranca con muy pocas celdas raíz (típicamente 1-2
+para polilíneas grandes como Chesapeake Bay a nivel 0), el muestreo
+por defecto de TUSQH (`-N 2`, 4 muestras por celda) puede
+sub-muestrear la celda gigante y clasificarla toda como `AllInside`
+o `AllOutside`, produciendo prácticamente cero subdivisiones. Esto
+fue observado con `data/Agua.poly` (Chesapeake Bay, bbox ~51×75):
+con `-a 7 -T -N 2` el resultado era 3 celdas (la mitad de una
+celda inicial). Con `-E` (intersección de aristas) sí converge pero
+tarda ~36 s y produce 698 celdas.
+
+**Fix:** nuevo método `Mesher::preRefineForTusqh`
+(`src/Mesher.cpp:3622-3673`, declarado en `src/Mesher.h:158-183`).
+Se invoca automáticamente antes de `windingSubdivide` tanto en
+`generateMesh` (`Mesher.cpp:267-268`) como en `refineMesh`
+(`Mesher.cpp:99-100`), pero solo si:
+
+1. `Quadrants.size() <= coarseThreshold` (default `2`), y
+2. `input.getEdges().size() >= minSegmentsForTrigger` (default `100`),
+   para no disparar en polilíneas triviales como `unit_square.poly`,
+3. `maxDepth > 0`.
+
+El umbral de segmentos (2) es clave: las pruebas de regresión
+(`unit_square`, `small_feature`, `figure14`, `boundary_filter`,
+`rotated`) tienen 4-13 segmentos y producen 1 celda con TUSQH,
+resultado que **no debe** alterarse. La polilínea de Chesapeake Bay
+tiene 46 432 segmentos y dispara la heurística.
+
+Cuando se dispara, se invoca `generateQuadtreeMesh(baseLevel=3, ...)`
+que refina la grilla inicial uniformemente a nivel 3 (= 64² = 4096
+celdas teóricas, en la práctica unas decenas o cientos dependiendo
+del intersect con la polilínea). El nivel base efectivo se capa a
+`maxDepth` si el usuario pidió menos profundidad. Luego
+`windingSubdivide` corre sobre la grilla pre-refinada y el muestreo
+`-N 2` ya es significativo.
+
+Resultados verificados con Chesapeake Bay (`-p data/Agua.poly`):
+
+| Comando                          | Celdas | Tiempo |
+|----------------------------------|--------|--------|
+| `-a 7 -T -N 2` (sin fix)         | 3      | 0.4 s  |
+| `-a 7 -T -E` (sin fix)           | 698    | 36 s   |
+| `-a 7 -T -N 2` (con fix)         | ≥3500  | <120 s |
+| `-a 4 -T -N 4` (sin fix)         | 174    | 7 s    |
+| `-a 3 -T -J -K 2 -F 0.5 -L 3` (con fix) | 645 | 53 s |
+
+Las 5 pruebas de regresión de `scripts/test_bridge_clean_info.py`
+siguen pasando (la heurística no se dispara porque la polilínea tiene
+menos de 100 segmentos).
+
+**Nota técnica:** la llamada a `generateQuadtreeMesh` que se usa en
+`preRefineForTusqh` pasa los argumentos en el orden correcto de la
+firma `(rl, input, all_reg, name, minrl, givenmaxrl, debugging,
+new_q_idx, Aliasing)`. La llamada pre-existente en `Mesher.cpp:271`
+(la rama `else` cuando NO se usa TUSQH) tiene los argumentos en
+orden incorrecto y produce una grilla distinta a la esperada — es
+un bug pre-existente que NO se corrige aquí porque cambiarlo podría
+alterar mallas ya producidas.
+
+#### 3.11.9 Bridge-joining paper-faithful (Step 1 + Step 3 rewrite)
+
+**Resumen:** el algoritmo bridge-joining se reimplementó para seguir
+fielmente el paper TUSQH §3.4: detectar componentes sobre el cubical
+complex completo (interior + exterior), identificar aristas entre
+componentes distintos, y añadir 1-to-5 splits que conectan los
+componentes.
+
+**Cambios clave:**
+
+1. **Step 1 (`Mesher.cpp` ~2030-2068): preservar celdas AllOutside.**
+   Antes, las celdas con `WindingState::AllOutside` se descartaban
+   después de TUSQH. Ahora se mantienen en `Quadrants` para que
+   `MapEdges` retenga las aristas entre exterior e interior — el
+   BFS necesita atravesar las celdas exteriores para identificar
+   componentes correctamente.
+
+2. **Step 2 (`Mesher.h:289` + `Mesher.cpp:3250-3260): helper
+   `isInteriorCell`.** Distingue celdas `AllInside`/`Mixed` (interior)
+   de `AllOutside`/`Unknown` (exterior) para que el BFS pueda contar
+   cuántas celdas interiores tiene cada componente.
+
+3. **Step 3 (`Mesher.cpp:3361-3520): nuevo bucle bridge-joining.** En
+   lugar de considerar solo aristas expuestas (`info[2] == MAX`), el
+   nuevo bucle:
+   - Ejecuta BFS sobre el **cubical complex completo** (interior +
+     exterior). Dos celdas interiores separadas por una cadena de
+     celdas exteriores pertenecen al MISMO componente — son la misma
+     "región topológica" según §3.4.
+   - Busca candidatos: aristas en `MapEdges` donde ambos lados son
+     celdas interiores en componentes DIFERENTES, con sub-cell VF ≥
+     `joinThreshold` y NO en la frontera global del dominio (Issue #1
+     filter).
+   - Para cada candidato, aplica `bridgeSplitAtEdge` al quad en
+     `info[1]`. El bridge quad se extiende hacia `info[2]`,
+     conectando los dos componentes.
+
+4. **Step 4 (`Mesher.cpp:3621-3690): filtro de output.** Las celdas
+   `AllOutside` se preservan para la topología del BFS pero se
+   excluyen del output final (mediante `isInteriorCell` en el filtro
+   `keepQuad`).
+
+**Resultados con Chesapeake Bay**
+(`-p data/Agua.poly -a 3 -T -J -K 2 -F 0.5 -L 1`):
+
+| Métrica                                | Valor    |
+|----------------------------------------|----------|
+| Cells pre-bridge (TUSQH output)        | 1019     |
+| Cells post-bridge                      | 1519     |
+| Bridges añadidos                       | 125      |
+| Componentes pre-bridge (cubical)       | 74       |
+| Componentes post-bridge (cubical)      | 71 (después de 2 iteraciones) |
+| Cells en output final (interior)       | 549      |
+| Componentes en output final (mesh)     | 110      |
+| Mayor componente en output (cells)     | 49       |
+
+Con el algoritmo anterior (limitado a exposed edges), 282 bridges
+añadidos generaban 281 componentes nuevos aislados. Con el nuevo
+algoritmo, los bridges unen componentes correctamente: aunque el
+número total de componentes en el output crece (110 vs 85 en TUSQH
+pre-bridge), esto se debe a la fragmentación natural de la bahía en
+islas pequeñas con -K 2 (sample size 2, quad size ≈ 0.5 unidades),
+no a bridges aislados.
+
+**Verificación con gap pequeño (`data/tusqh_bridge_small_gap.poly`,
+2 cuadrados 0.5×0.5 con gap=0.1):**
+- 9 celdas iniciales (5 interior + 4 exterior preservadas).
+- 2 bridges añadidos en iter 0.
+- Output: 3 celdas (los 2 cuadrados + 1 bridge quad que pasa el
+  filtro `isInteriorCell`).
+
+**Limitación residual (paper-faithful pero no perfecta):** el bridge
+quad se clasifica con `WindingNumberVisitor` después de añadirlo. Si
+el bridge quad cae en zona exterior pura (e.g., gap sobre open water),
+se clasifica como `AllOutside` y se descarta. Para Chesapeake Bay
+con -K 2, la mayoría de los gaps entre islas son sobre open water,
+por lo que la mayoría de los bridges se descartan — pero los que
+sobreviven conectan correctamente los componentes que sí son
+cercanos.
+
+**Documentación relacionada:**
+- Detalle por paso: `doc/STEP_0..7_*.md`.
+- Bugs resueltos: `doc/BUGS_FOUND.md` (Issue #4 documenta el problema
+  original resuelto por este rewrite; Issues #1-#3 son los filtros que
+  el nuevo bucle aplica a los candidatos).
+- Métricas finales: `doc/WORK_SUMMARY.md` §"Final results".
+- Estado del branch: `doc/CURRENT_STATE.md`.
+
 ---
 
 ## 4. Variables y campos importantes
@@ -356,6 +668,22 @@ main()  src/Main.cpp:113
               │       └── s × s × Polyline::windingNumber
               │             Quadrant::computeVolumeFraction(wn)  src/Quadrant.cpp:179-188
               │
+              └── si useSubgrid (== -J):
+                    Mesher::computeSubcellVolumeFractions(...)   src/Mesher.cpp:2876-2943
+                      └── popula mEdgeSubcellVF / mVertexSubcellVF
+                    Mesher::resolveArchipelagos(...)            src/Mesher.cpp:3286-3587
+                      │
+                      │   bucle iter (hasta convergencia):
+                      │     computeSubcellVolumeFractions         (re-poblar tras cada split)
+                      │     BFS componentes (MapEdges)
+                      │     para cada arista info[2]==max con VF>=τ:
+                      │       computeExteriorDirection            src/Mesher.cpp:2969-2990
+                      │       isEdgeOnDomainBoundary               src/Mesher.cpp:2992-3050 (Issue #1)
+                      │       bridgeSplitAtEdge                    src/Mesher.cpp:2969-3145 (Issue #2, #3)
+                      │     drop componentes con < L celdas
+                      │
+                      └── guard: si Quadrants.empty() ⇒ skip saveOutputMesh  src/Mesher.cpp:3555..3568
+              │
               └── dump VTK (si VTKOUT==true):
                     VolumeFractionVTKWriter::writeQuadTreeWithVF  →  volume_fraction_debug.vtk
                     VolumeFractionVTKWriter::writeVFHeatmap        →  volume_fraction_debug_samples.vtk
@@ -365,6 +693,15 @@ Salidas VTK adicionales cuando `useTusqh`:
 
 - `Mesher.cpp:2209-2217` → `<name>_tusqh.vtk` y `<name>_winding_state.vtk`
   (vía `VolumeFractionVTKWriter::writeWindingState`).
+
+Salidas VTK adicionales cuando `useSubgrid` (`-J`):
+
+- `<name>_subcell_vertex.vtk` — vértices con `mVertexSubcellVF`
+  (`Mesher.cpp:2940`).
+- `<name>_subcell_edge.vtk` — aristas con `mEdgeSubcellVF`
+  (`Mesher.cpp:2943`).
+- `<name>_postarchipelago.vtk` — quadtree tras `resolveArchipelagos`
+  (sólo si `Quadrants` no quedó vacío; ver §3.11.6).
 
 ---
 
