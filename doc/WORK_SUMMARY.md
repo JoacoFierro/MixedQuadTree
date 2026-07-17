@@ -37,17 +37,33 @@ All 7 steps completed.
 
 ### Metrics on Chesapeake Bay (`data/Agua.poly`)
 
-Command: `./build/mesher_roi -p data/Agua.poly -u out -a 3 -T -J -K 2 -F 0.5 -L 1 -e -v`
+Command: `./build/mesher_roi -p data/Agua.poly -u out -a 3 -T -J -K 2 -F 0.5 -L 5 -e -v`
+
+Pre-fix (with Issue #3 erase, isolated bridge quads):
 
 | Metric | Value |
 |--------|-------|
-| Wall-clock time | ~38 s |
-| Cubical complex cells (incl. exterior) | ~1393 |
-| Interior cells in output mesh | **549** |
-| Components in output mesh | 110 |
-| Biggest component | 49 cells |
+| Wall-clock time | ~76 s |
+| Cubical complex cells (incl. exterior) | ~1345 |
+| Components after bridge loop | 241 |
 | Bridges added | 125 (in 2 iterations) |
-| AllOutside cells dropped from output | 970 |
+| Small-component quads dropped (min=5) | 1020 |
+
+Post-fix (with Issue #8 update, bridge quads join neighbour's
+component — see `BUGS_FOUND.md` §Issue #8):
+
+| Metric | Value |
+|--------|-------|
+| Wall-clock time | ~75 s |
+| Cubical complex cells (incl. exterior) | ~1335 |
+| Components after bridge loop | 229 (-12) |
+| Bridges added | 117 (-8) |
+| Small-component quads dropped (min=5) | 979 (-41) |
+
+The decrease in components (12 fewer), bridges (8 fewer), and dropped
+quads (41 fewer) confirms that the bridge quads are now properly
+merged with their neighbour's components, instead of forming isolated
+1-quad components that survived only because of the `-L 5` filter.
 
 Centroid validation (`scripts/analyze_output.py`):
 

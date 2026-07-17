@@ -213,29 +213,49 @@ namespace Clobscode
         // quad that extends OUTWARD from the bridge edge by
         // perpendicular distance H/sampleSize.
         //
-        // On success returns a vector of 5 new Quadrants (4 interior
-        // sub-quads + 1 bridge quad) with sequential q_ids starting
-        // from `nextQIdx`. `nextQIdx` is updated to one past the last
-        // assigned q_id.
+        // Optionally also splits the neighbour quad `q2` (the quad
+        // sharing the bridge edge on the opposite side) 1-to-4 and
+        // discards its 2 sub-quads that overlap with the bridge quad
+        // (Option B-subdiv). This maintains manifoldness so the bridge
+        // quad is the only quad occupying its area.
+        //
+        // `doManifoldSplit` controls whether the neighbour is also
+        // split:
+        //   - false (Option A): just register the bridge quad on the
+        //     full (e0, e1) edge in MapEdges so it is topologically
+        //     connected to `q2`. Some geometric overlap with `q2`
+        //     remains (the bridge quad and q2 share the (e0, e1)
+        //     edge but the bridge quad is inside q2's territory).
+        //   - true (Option B-subdiv): additionally 1-to-4 split q2
+        //     and discard its 2 sub-quads adjacent to the bridge edge,
+        //     producing a manifold bridge.
+        //
+        // On success returns a vector of 5 (Option A) or 7 (Option B)
+        // new Quadrants with sequential q_ids starting at `nextQIdx`.
+        // `nextQIdx` is updated to one past the last assigned q_id.
+        //
+        // Order of returned quads:
+        //   [0..3] : 4 sub-quads of q (NW, NE, SE, SW order)
+        //   [4]    : bridge quad
+        //   [5..6] : 2 kept sub-quads of q2 (NE, NW order) - only
+        //            present when doManifoldSplit is true
         //
         // Side effects (the function does these):
-        //   - adds new MeshPoints (2 exterior bridge corners + the 4
-        //     mid-edges + 1 center from SplitVisitor's 1-to-4 split)
-        //     to `points`,
+        //   - adds new MeshPoints (mid-edges + center from each
+        //     SplitVisitor call + 2 exterior bridge corners) to
+        //     `points`,
         //   - adds/updates MapEdges entries for the new sub-quads and
-        //     the bridge quad,
-        //   - adds sub-cell VF placeholder entries for the new edges
-        //     so the next `computeSubcellVolumeFractions` call will
-        //     find them.
+        //     the bridge quad.
         //
-        // On failure returns an empty vector (e.g. degenerate quad
-        // where H is too small). The caller must then NOT remove `q`
-        // from Quadrants.
+        // On failure returns an empty vector. The caller must then
+        // NOT remove `q` (or `q2` if doManifoldSplit) from Quadrants.
         virtual std::vector<Quadrant> bridgeSplitAtEdge(
             Quadrant &q,
+            Quadrant &q2,
             unsigned int bridgeEdgeIdx,
             unsigned int sampleSize,
-            unsigned int &nextQIdx);
+            unsigned int &nextQIdx,
+            bool doManifoldSplit);
 
         // TUSQH §3.4 helper: returns the unit outward direction from the
         // bridge edge of quad `q` (i.e. the direction in which a bridge

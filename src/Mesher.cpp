@@ -3022,16 +3022,33 @@ namespace Clobscode
     // structures beyond what SplitVisitor did. The caller should
     // then leave `q` in Quadrants.
     vector<Quadrant> Mesher::bridgeSplitAtEdge(Quadrant &q,
+                                                Quadrant &q2,
                                                 unsigned int bridgeEdgeIdx,
                                                 unsigned int sampleSize,
-                                                unsigned int &nextQIdx)
+                                                unsigned int &nextQIdx,
+                                                bool doManifoldSplit)
     {
+        (void)doManifoldSplit;  // Option B-subdiv is planned but not
+                                 // implemented yet (kept in the API
+                                 // for future use). Option A is the
+                                 // current behaviour.
+
         vector<Quadrant> result;
 
         if (bridgeEdgeIdx > 3) return result;
 
         const vector<unsigned int> &pi = q.getPointIndex();
         if (pi.size() != 4) return result;
+
+        // q2 is the neighbour on the other side of the bridge edge.
+        // MapEdges guarantees info[2] is a valid quad; we don't
+        // re-validate its corners because the cubical complex may
+        // already have refined or split it but kept its id slot for
+        // bookkeeping (in that case the BFS still considers it a
+        // neighbour via the MapEdges entry). The caller has already
+        // confirmed both sides are interior and in different
+        // components via the candidate filter.
+        (void)q2;
 
         if (sampleSize == 0) return result;
 
@@ -3187,18 +3204,41 @@ namespace Clobscode
         Quadrant bq(bridge_corners, ref_level, nextQIdx++);
         result.push_back(std::move(bq));
 
-        // Issue #3 (TUSQH §3.4): drop the stale MapEdges entry for
-        // the FULL bridge edge (e0, e1). After SplitVisitor + bridge
-        // split, the edge is fully represented by its two halves:
-        //   - (e0, m_bridge)  → SW sub-quad vs. bridge quad
-        //   - (m_bridge, e1)  → SE sub-quad vs. bridge quad
-        // Keeping the full edge would leave `info[1]` pointing to the
-        // original (now-removed) quad `q`, which is stale and would
-        // confuse the downstream BFS in `resolveArchipelagos`.
+        // Issue #8 (TUSQH §3.4, manifoldness): instead of erasing the
+        // (e0, e1) entry from MapEdges (which made the bridge quad
+        // topologically isolated), UPDATE it so that:
+        //   - info[0] (midpoint) stays at m_bridge (set by SplitVisitor)
+        //   - info[1] becomes the bridge quad's q_id (was stale: pointed
+        //     to the removed quad q)
+        //   - info[2] becomes the neighbour q2's q_id (was already set
+        //     by SplitVisitor but we re-assert it for safety)
+        //
+        // This way the bridge quad is reachable from q2 in BFS via
+        // the full (e0, e1) edge, so the bridge quad joins q2's
+        // component. The bridge quad geometrically lies INSIDE q2's
+        // rectangular fictitious cell (the bridge edge is the shared
+        // boundary), so this matches TUSQH §3.4's "bridge quad is on
+        // the side of the neighbour with smaller sum-of-VFs".
+        //
+        // Note: this is Option A (topology fix only). The bridge quad
+        // still geometrically overlaps q2's rectangular cell, so
+        // strict manifoldness is not achieved. Option B-subdiv
+        // (splitting q2 and discarding 2 of its sub-quads) would fix
+        // manifoldness but is not yet implemented.
         {
             unsigned int a = e0, b = e1;
             if (a > b) std::swap(a, b);
-            MapEdges.erase(QuadEdge(a, b));
+            QuadEdge ke(a, b);
+            auto it = MapEdges.find(ke);
+            if (it == MapEdges.end()) {
+                // Should not happen: SplitVisitor created this entry.
+                MapEdges.emplace(ke, EdgeInfo(m_bridge, bridge_q_id,
+                    q2.getIndex()));
+            } else {
+                it->second[0] = m_bridge;
+                it->second[1] = bridge_q_id;
+                it->second[2] = q2.getIndex();
+            }
         }
 
         return result;
@@ -3517,11 +3557,15 @@ namespace Clobscode
                 auto meIt = MapEdges.find(ke);
                 if (meIt == MapEdges.end()) continue;
                 unsigned int q_id = meIt->second[1];
+                unsigned int q2_id = meIt->second[2];
                 if (q_id == std::numeric_limits<unsigned int>::max()) continue;
+                if (q2_id == std::numeric_limits<unsigned int>::max()) continue;
 
                 auto qiIt = qIdToIdx.find(q_id);
-                if (qiIt == qIdToIdx.end()) continue;
+                auto q2iIt = qIdToIdx.find(q2_id);
+                if (qiIt == qIdToIdx.end() || q2iIt == qIdToIdx.end()) continue;
                 unsigned int qi = qiIt->second;
+                unsigned int q2i = q2iIt->second;
 
                 // Locate the edge index in the quad's corner list.
                 const auto& pi = Quadrants[qi].getPointIndex();
@@ -3537,9 +3581,12 @@ namespace Clobscode
                 }
                 if (bridgeEdgeIdx == 4) continue;
 
-                // Perform the 1-to-5 split.
+                // Perform the 1-to-5 split. Pass q2 so the bridge quad
+                // can be topologically registered as a neighbour of q2
+                // (Issue #8 fix: MapEdges update instead of erase).
                 vector<Quadrant> newQuads = bridgeSplitAtEdge(
-                    Quadrants[qi], bridgeEdgeIdx, sampleSize, nextQIdx);
+                    Quadrants[qi], Quadrants[q2i], bridgeEdgeIdx,
+                    sampleSize, nextQIdx, false);
                 if (newQuads.empty()) continue;
 
                 // Replace the original quad with the first new quad

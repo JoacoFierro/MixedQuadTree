@@ -292,6 +292,99 @@ quad interior to the gap).
 
 ---
 
+## Issue #8 — Bridge quad is topologically isolated (erased full edge)
+
+**Severity:** High (the bridge quad survives only because of the
+`-L 1` filter; in any other mode it would be dropped).
+
+**Status:** ✅ Fixed.
+
+### Symptom
+
+In `Mesher::bridgeSplitAtEdge`, after performing the 1-to-5 split, the
+code does:
+
+```cpp
+MapEdges.erase(QuadEdge(e0, e1));  // ← Issue #3
+```
+
+This removes the MapEdges entry for the **full bridge edge** between
+the original quad `q` and the neighbour `q2`. The two half-edges
+`(e0, m_bridge)` and `(m_bridge, e1)` are kept and reference the new
+bridge quad, so the bridge quad is connected to `q`'s sub-quads.
+
+But the bridge quad has **no edge connecting it directly to `q2`** —
+all 4 of its edges are either halves (connecting to `q`'s sub-quads)
+or brand-new outer edges (connecting to nothing).
+
+Result: the bridge quad is a 1-quad connected component on its own
+(only reachable through `q`'s sub-quads, which are on the OTHER side
+of `q2`).
+
+The only reason the bridge quads survive in the output is that the
+`isInteriorCell`-filter on small components (`-L 1` by default in the
+test framework) keeps any component with ≥ 1 quad. The behaviour
+**silently changes** if the user passes `-L 2` or larger: the bridge
+quads disappear.
+
+### Root cause
+
+The Issue #3 fix (erase full edge after 1-to-5 split) was made on the
+assumption that the halves fully represent the topology. They don't,
+because the bridge quad is geometrically on the `q2` side of the
+bridge edge, so it needs a MapEdges entry that points to `q2`.
+
+### Fix
+
+In `Mesher::bridgeSplitAtEdge` (`src/Mesher.cpp:3230-3248`),
+**replace** the `MapEdges.erase((e0, e1))` with an in-place update:
+
+```cpp
+auto it = MapEdges.find(QuadEdge(min(e0,e1), max(e0,e1)));
+if (it == MapEdges.end()) {
+    MapEdges.emplace(ke, EdgeInfo(m_bridge, bridge_q_id, q2.getIndex()));
+} else {
+    it->second[0] = m_bridge;        // midpoint stays the same
+    it->second[1] = bridge_q_id;     // ← was the removed `q`
+    it->second[2] = q2.getIndex();   // ← already set by SplitVisitor
+}
+```
+
+Now the bridge quad is reachable from `q2` via the full `(e0, e1)`
+edge, so the BFS in `resolveArchipelagos` puts the bridge quad in
+`q2`'s component (and consequently `q`'s sub-quads, which share the
+halves with the bridge quad).
+
+The function signature was extended to take `q2` and a
+`doManifoldSplit` flag (Option B-subdiv placeholder; not implemented
+yet but kept in the API for future use).
+
+### Verification
+
+| Metric | Pre-fix (Issue #3 erase) | Post-fix (Issue #8 update) |
+|--------|--------------------------|----------------------------|
+| Agua `-a 3 -T -J -K 2 -F 0.5 -L 5`: components | 241 | 229 (-12) |
+| Agua `-a 3 -T -J -K 2 -F 0.5 -L 5`: bridges | 125 | 117 (-8) |
+| Agua `-a 3 -T -J -K 2 -F 0.5 -L 5`: small-component quads dropped | 1020 | 979 (-41) |
+
+The 12 fewer components and 8 fewer bridges indicate that the bridge
+quads are now properly joining their neighbour's component (instead of
+becoming isolated 1-quad components). The 41 fewer dropped quads
+confirms that more quads survive in larger (merged) components rather
+than being dropped as small 1-quad components.
+
+The 6 baseline tests in `scripts/test_bridge_clean_info.py` all still
+pass.
+
+**Note on manifoldness:** Option A (topology fix only) leaves the
+bridge quad geometrically overlapping `q2`'s rectangular fictitious
+cell. Strict manifoldness would require Option B-subdiv (splitting
+`q2` 1-to-4 and discarding its 2 sub-quads adjacent to the bridge
+edge). The `doManifoldSplit` flag in the API is reserved for that
+future implementation.
+
+---
+
 ## Issue #5 — `saveOutputMesh` segfaults on empty `Quadrants`
 
 **Severity:** Medium (crash, but only when all components dropped).
@@ -438,6 +531,7 @@ Build succeeds with `-Wno-error`; only emits warnings.
 | 5 | `saveOutputMesh` segfaults on empty `Quadrants` | Medium | ✅ Fixed |
 | 6 | TUSQH undersamples coarse initial grid | High | ✅ Fixed (pre-existing) |
 | 7 | `Quadrant::getIndex()` const-ness | Low | ⚠️ Documented, not fixed |
+| 8 | Bridge quad is topologically isolated (erased full edge) | High | ✅ Fixed (Option A: update instead of erase) |
 
 ## Outstanding latent bugs (not in this session)
 
