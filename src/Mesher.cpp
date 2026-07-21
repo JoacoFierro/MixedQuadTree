@@ -3655,15 +3655,39 @@ namespace Clobscode
                 // otherwise-interior cell. The original code only
                 // classified the 4 appended quads and missed the
                 // replacement whenever qi was not the last position.
+                //
+                // WindingNumberVisitor::visit only computes the per-sample
+                // winding numbers + VF; it does NOT set WindingState.
+                // WindingState must be derived from the winding numbers
+                // we just computed: all wn>0 → AllInside, all wn==0 →
+                // AllOutside, otherwise → Mixed. (Equivalent to what
+                // WindingNumberSubdivisionVisitor does, but without the
+                // subdivision side-effect.)
+                auto classifyFromWindingNumbers = [](Quadrant &q) {
+                    const auto &wns = q.getWindingNumbers();
+                    bool anyPos = false, anyZero = false;
+                    for (double wn : wns) {
+                        if (wn > 0.0) anyPos = true;
+                        else anyZero = true;
+                    }
+                    if (anyPos && !anyZero)
+                        q.setWindingState(WindingState::AllInside);
+                    else if (!anyPos && anyZero)
+                        q.setWindingState(WindingState::AllOutside);
+                    else
+                        q.setWindingState(WindingState::Mixed);
+                };
                 if (!Quadrants.empty()) {
                     WindingNumberVisitor wnv(sampleSize);
                     wnv.setPolyline(&input);
                     wnv.setPoints(&points);
                     Quadrants[qi].accept(&wnv);
+                    classifyFromWindingNumbers(Quadrants[qi]);
                     const unsigned int startIdx =
                         Quadrants.size() - (unsigned int)newQuads.size() + 1;
                     for (unsigned int k = startIdx; k < Quadrants.size(); ++k) {
                         Quadrants[k].accept(&wnv);
+                        classifyFromWindingNumbers(Quadrants[k]);
                     }
                 }
                 ++bridgesThisIter;
@@ -3693,6 +3717,45 @@ namespace Clobscode
             }
 #endif
         }
+
+#if (VTKOUT==true)
+        {
+            // Step 5.5a — Post-bridges winding-state snapshot. Same
+            // geometry as output_postbridges.vtk but with per-cell
+            // WindingState (Unknown=0 / AllInside=1 / AllOutside=2 /
+            // Mixed=3) as CELL_DATA, plus volume_fraction and
+            // refinement_level for context.
+            //
+            // Diagnostic target: confirm the Fix A in resolveArchipelagos
+            // (Mesher.cpp:3649-3668) classified the first sub-quad after
+            // bridgeSplitAtEdge; if any cell shows Unknown=0 here, the
+            // BFS will mark it unvisited and the drop filter will discard
+            // it. Also useful to inspect bridge quads that may have been
+            // placed inside what should be AllInside regions (those would
+            // appear as Mixed=3 cells surrounded by AllInside=1, which
+            // is a strong hint of an issue in bridgeSplitAtEdge or
+            // computeExteriorDirection for non-AABB quads).
+            string tmp_name = name + "_postbridge";
+            if (!Quadrants.empty()) {
+                VolumeFractionVTKWriter::writeWindingState(
+                    tmp_name, Quadrants, points);
+                unsigned int nUnknown = 0, nAllInside = 0,
+                             nAllOutside = 0, nMixed = 0;
+                for (const auto& q : Quadrants) {
+                    switch (q.getWindingState()) {
+                        case WindingState::Unknown:    ++nUnknown; break;
+                        case WindingState::AllInside:  ++nAllInside; break;
+                        case WindingState::AllOutside: ++nAllOutside; break;
+                        case WindingState::Mixed:      ++nMixed; break;
+                    }
+                }
+                cout << "    [postbridge winding] Unknown=" << nUnknown
+                     << " AllInside=" << nAllInside
+                     << " AllOutside=" << nAllOutside
+                     << " Mixed=" << nMixed << "\n";
+            }
+        }
+#endif
 
 #if (VTKOUT==true)
         {

@@ -618,6 +618,107 @@ in `src/SubgridSampler.h:120-141` was extended accordingly.
 | 7 | `Quadrant::getIndex()` const-ness | Low | ⚠️ Documented, not fixed |
 | 8 | Bridge quad is topologically isolated (erased full edge) | High | ✅ Fixed (Option A: update instead of erase) |
 | 9 | `buildQuadPerpThickness` uses `info[k]` as vector index | Medium-high | ✅ Fixed (qIdToIdx lookup) |
+| 10 | Bridge sub-quads left with `WindingState::Unknown` (fix A used the wrong visitor) | High | ✅ Fixed (derive state from per-sample winding numbers) |
+
+---
+
+## Issue #10 — Bridge sub-quads left with `WindingState::Unknown` despite fix A
+
+**Severity:** High (algorithmic correctness — many valid interior cells
+were dropped, and bridge quads that should join components never
+appeared in the BFS / drop filter as interior).
+
+**Status:** ✅ Fixed.
+
+### Symptom
+
+After applying the Issue #9 / fix A combo, the Chesapeake Bay run with
+`-T -J` was still dropping large interior regions, especially in the
+lower-right area. Visual inspection of `output_postbridge_winding_state.vtk`
+(added as part of this fix) showed **10 `Unknown` cells** in small test
+cases that have bridges (`tusqh_bridge_small_gap.poly`,
+`tusqh_small_feature.poly`), even though the bridge loop had been
+called and the new quads existed in `Quadrants`.
+
+`isInteriorCell()` returns `false` for `WindingState::Unknown`, so the
+final drop filter silently discards every bridge quad and every
+replacement quad whose classification failed.
+
+### Root cause
+
+The bridge-loop classifier used `WindingNumberVisitor::visit`:
+
+```cpp
+WindingNumberVisitor wnv(sampleSize);
+wnv.setPolyline(&input);
+wnv.setPoints(&points);
+Quadrants[qi].accept(&wnv);     // ← only computes per-sample wn + VF
+for (...) Quadrants[k].accept(&wnv);
+```
+
+But `WindingNumberVisitor::visit` calls `computePostOrder` →
+`Quadrant::computeVolumeFraction`, which **only stores the per-sample
+winding numbers and the average VF**. It does NOT call
+`setWindingState`. The actual classification (AllInside / AllOutside /
+Mixed) lives in `WindingNumberSubdivisionVisitor::visit`, which is
+only invoked during `windingSubdivide` (the subdivision loop), so
+newly-created bridge sub-quads were left with the default
+`WindingState::Unknown` from `Quadrant::Quadrant`.
+
+Fix A only addressed the indexing bug (it only classified the 4
+appended quads and missed the replacement at `qi`); the visitor used
+was the wrong one.
+
+### Fix
+
+After the visitor populates `q.getWindingNumbers()`, derive the
+`WindingState` from those values inline (the same rule as
+`WindingNumberSubdivisionVisitor`, but without the subdivision
+side-effect):
+
+```cpp
+auto classifyFromWindingNumbers = [](Quadrant &q) {
+    const auto &wns = q.getWindingNumbers();
+    bool anyPos = false, anyZero = false;
+    for (double wn : wns) {
+        if (wn > 0.0) anyPos = true;
+        else anyZero = true;
+    }
+    if (anyPos && !anyZero)
+        q.setWindingState(WindingState::AllInside);
+    else if (!anyPos && anyZero)
+        q.setWindingState(WindingState::AllOutside);
+    else
+        q.setWindingState(WindingState::Mixed);
+};
+```
+
+Applied after every `Quadrants[k].accept(&wnv)` in the bridge loop
+(`src/Mesher.cpp:3680-3692`).
+
+### Verification
+
+- Build succeeds (only pre-existing warnings).
+- `scripts/test_bridge_winding_classification.sh` runs the four
+  small cases (`a.poly`, `tusqh_bridge_small_gap.poly`,
+  `tusqh_boundary_filter.poly`, `tusqh_small_feature.poly`) with
+  `-T -J -a 3` and asserts `Unknown=0` for every case.
+- Before fix: `tusqh_bridge_small_gap.poly` produced 17 cells with 10
+  Unknown (predrop) → 0 will keep. After fix: 49 cells with 0 Unknown
+  → **16 will keep** (the same 16 the BFS now sees as interior).
+- `a.poly` and `tusqh_boundary_filter.poly` show no regression
+  (Unknown=0, same drop counts as before).
+
+### Diagnostic dump added
+
+`output_postbridge_winding_state.vtk` (one per run) writes the
+quadtree with per-cell `winding_state` (`Unknown=0 / AllInside=1 /
+AllOutside=2 / Mixed=3`), `volume_fraction`, and `refinement_level`
+as `CELL_DATA`. Useful to confirm any future bridge/classification
+change leaves no cell in `Unknown`. See
+`src/Visualization/VolumeFractionVTKWriter.cpp:216` (`writeWindingState`).
+
+---
 
 ## Outstanding latent bugs (not in this session)
 
