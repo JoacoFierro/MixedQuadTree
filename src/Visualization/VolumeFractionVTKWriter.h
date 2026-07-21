@@ -80,6 +80,20 @@ namespace Clobscode
                                        const std::vector<MeshPoint>& points,
                                        const std::map<QuadEdge, EdgeSubcellVFData>& edgeSubcellVF,
                                        double joinThreshold);
+
+        // Generic helper: writes the quadtree as a UNSTRUCTURED_GRID
+        // and attaches a single CELL_DATA scalar field with the given
+        // name and one double value per quad. Used for debug snapshots
+        // that need to colour cells by an arbitrary integer label
+        // (e.g. component id, keep/drop decision).
+        //
+        // `values.size()` must equal `quadrants.size()`.
+        static bool writeQuadTreeWithCellArray(
+            const std::string& name,
+            const std::vector<Quadrant>& quadrants,
+            const std::vector<MeshPoint>& points,
+            const std::string& arrayName,
+            const std::vector<double>& values);
     };
 }
 

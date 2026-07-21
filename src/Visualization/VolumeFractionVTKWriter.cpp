@@ -480,4 +480,76 @@ namespace Clobscode
         return true;
     }
 
+    //--------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------------
+    bool VolumeFractionVTKWriter::writeQuadTreeWithCellArray(
+        const std::string& name,
+        const std::vector<Quadrant>& quadrants,
+        const std::vector<MeshPoint>& points,
+        const std::string& arrayName,
+        const std::vector<double>& values)
+    {
+        if (quadrants.empty()) {
+            std::cerr << "No quadrants to write\n";
+            return false;
+        }
+        if (values.size() != quadrants.size()) {
+            std::cerr << "writeQuadTreeWithCellArray: values.size ("
+                      << values.size() << ") != quadrants.size ("
+                      << quadrants.size() << ")\n";
+            return false;
+        }
+
+        string vol_name = name + ".vtk";
+
+        FILE* f = fopen(vol_name.c_str(), "wt");
+        if (!f) {
+            std::cerr << "Cannot open file: " << vol_name << "\n";
+            return false;
+        }
+
+        fprintf(f, "# vtk DataFile Version 2.0\n");
+        fprintf(f, "QuadTree debug snapshot\n");
+        fprintf(f, "ASCII\n\n");
+
+        fprintf(f, "DATASET UNSTRUCTURED_GRID\n");
+        fprintf(f, "POINTS %u float\n", (unsigned int)points.size());
+        for (unsigned int i = 0; i < points.size(); i++) {
+            const Point3D& p = points[i].getPoint();
+            fprintf(f, "%+1.8E %+1.8E %+1.8E\n", p[0], p[1], p[2]);
+        }
+
+        unsigned int num_cells = (unsigned int)quadrants.size();
+        unsigned int connectivity = 0;
+        for (const auto& q : quadrants) {
+            connectivity += (unsigned int)q.getPointIndex().size() + 1;
+        }
+
+        fprintf(f, "\nCELLS %u %u\n", num_cells, connectivity);
+        for (const auto& q : quadrants) {
+            const auto& idx = q.getPointIndex();
+            fprintf(f, "%u", (unsigned int)idx.size());
+            for (auto i : idx) fprintf(f, " %u", i);
+            fprintf(f, "\n");
+        }
+
+        fprintf(f, "\nCELL_TYPES %u\n", num_cells);
+        for (unsigned int i = 0; i < num_cells; i++) {
+            if (i % 30 == 0) fprintf(f, "\n");
+            fprintf(f, "9 "); // VTK_QUAD
+        }
+
+        fprintf(f, "\n\nCELL_DATA %u\n", num_cells);
+        fprintf(f, "SCALARS %s double 1\n", arrayName.c_str());
+        fprintf(f, "LOOKUP_TABLE default\n");
+        for (unsigned int i = 0; i < num_cells; i++) {
+            if (i % 30 == 0) fprintf(f, "\n");
+            fprintf(f, "%+1.8E\n", values[i]);
+        }
+
+        fclose(f);
+        std::cout << "  Wrote: " << vol_name << " (CELL_DATA=" << arrayName << ")\n";
+        return true;
+    }
+
 }

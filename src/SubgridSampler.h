@@ -52,6 +52,7 @@
 #include "Quadrant.h"
 
 #include <map>
+#include <unordered_map>
 #include <vector>
 #include <utility>
 
@@ -117,9 +118,18 @@ namespace Clobscode
         /// adjacent quadrant (0 if a quadrant does not exist or if the
         /// quadrilateral is degenerate). The returned vector has up to 2
         /// entries (one per side).
+        ///
+        /// `qIdToIdx` maps each quadrant's q_id (== EdgeInfo info[1/2])
+        /// to its position in the `quadrants` vector. EdgeInfo stores
+        /// q_ids (not vector indices), so the lookup is required.
+        /// Build it once before the edge loop:
+        ///   unordered_map<unsigned int, unsigned int> qIdToIdx;
+        ///   for (unsigned int i = 0; i < quadrants.size(); ++i)
+        ///       qIdToIdx[quadrants[i].getIndex()] = i;
         static vector<double>
         buildQuadPerpThickness(const QuadEdge& edge,
                                const map<QuadEdge, EdgeInfo>& mapEdges,
+                               const unordered_map<unsigned int, unsigned int>& qIdToIdx,
                                const vector<Quadrant>& quadrants,
                                const vector<MeshPoint>& points);
     };

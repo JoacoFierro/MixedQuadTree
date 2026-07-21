@@ -278,6 +278,22 @@ namespace Clobscode
             generateQuadtreeMesh(rl,input,all_reg,name,0,debugging,Quadrants.size(),Aliasing);
         }
 
+#if (VTKOUT==true)
+        {
+            // Step 2 — Post-TUSQH quadtree state (BEFORE volume fractions).
+            // This snapshot shows how TUSQH subdivided the polyline, before
+            // any sub-cell VF / archipelago work. It is the baseline that
+            // the pre/post-archipelago VTKs (steps 4.5 and 5) are diffed
+            // against.
+            std::shared_ptr<FEMesh> octree_mesh = make_shared<FEMesh>();
+            if (!Quadrants.empty()) {
+                saveOutputMesh(octree_mesh, points, Quadrants);
+            }
+            string tmp_name = name + "_octree";
+            Services::WriteVTK(tmp_name, octree_mesh);
+        }
+#endif
+
         // compute volume fractions using winding numbers with s x s samples
         mSampleSize = sampleSize;
         computeVolumeFractions(input, mSampleSize);
@@ -288,6 +304,27 @@ namespace Clobscode
         if (useSubgrid) {
             computeSubcellVolumeFractions(input, subgridSampleSize,
                                            subgridJoinThreshold, name);
+
+#if (VTKOUT==true)
+            {
+                // Step 4.5 — Pre-archipelago state. After sub-cell VF has
+                // been computed but BEFORE bridges are added. The edge
+                // sub-cell VF array (mEdgeSubcellVF) is what
+                // SubgridSampler::buildQuadPerpThickness produced; if
+                // that function ever reads `Quadrants[info[k]]` with a
+                // q_id that is not equal to the vector index, the perp
+                // thickness (and therefore the edge VF) will be wrong.
+                // Diffing this file against _postarchipelago shows the
+                // exact effect of the bridge loop.
+                std::shared_ptr<FEMesh> pre_mesh = make_shared<FEMesh>();
+                if (!Quadrants.empty()) {
+                    saveOutputMesh(pre_mesh, points, Quadrants);
+                }
+                string tmp_name = name + "_prearchipelago";
+                Services::WriteVTK(tmp_name, pre_mesh);
+            }
+#endif
+
             resolveArchipelagos(input, subgridSampleSize,
                                 subgridJoinThreshold,
                                 subgridMinComponentCells,
@@ -2931,6 +2968,19 @@ namespace Clobscode
 
         mEdgeSubcellVF.clear();
 
+        // Build the q_id -> vector index lookup ONCE before the edge loop.
+        // EdgeInfo stores q_ids (set at Quadrant construction time) in
+        // info[1]/info[2], but the Quadrants vector may be ordered
+        // differently from the q_id sequence (especially after
+        // resolveArchipelagos' compact-and-rebuild). We must translate
+        // q_id -> index before indexing `Quadrants[]`. See BUGS_FOUND.md
+        // Issue #9.
+        unordered_map<unsigned int, unsigned int> qIdToIdx;
+        qIdToIdx.reserve(Quadrants.size() * 2);
+        for (unsigned int qi = 0; qi < Quadrants.size(); ++qi) {
+            qIdToIdx[Quadrants[qi].getIndex()] = qi;
+        }
+
         // ----- 0-cells (vertices) -----
         // For each vertex of the quadtree, build the list of incident
         // edge lengths by scanning MapEdges. Then sample s x s points
@@ -2956,7 +3006,7 @@ namespace Clobscode
 
             vector<double> perp =
                 SubgridSampler::buildQuadPerpThickness(edge, MapEdges,
-                                                       Quadrants, points);
+                                                       qIdToIdx, Quadrants, points);
 
             SubgridSampler::Result r = sampler.sampleEdge(
                 points[edge[0]].getPoint(),
@@ -3596,27 +3646,22 @@ namespace Clobscode
                     Quadrants.push_back(std::move(newQuads[k]));
                 }
 
-                // Classify the new bridge quad (the 5th, last one) so
-                // its WindingState is set. The 4 sub-quads inherit
-                // their winding from the parent quad's area (they're
-                // inside it, so their VFs are subsets), so they don't
-                // strictly need re-classification — but for safety
-                // (e.g. when the parent had unknown winding) we
-                // classify all 5.
-                //
-                // This is what makes the BFS in the next iteration see
-                // the bridge quad as part of the component it was
-                // added to connect. Without classification the quad
-                // has Unknown winding, which is treated as exterior,
-                // and the BFS drops it.
+                // Classify every new quad so its WindingState is set
+                // (the Quadrant constructor leaves it as Unknown).
+                // This includes the first sub-quad at position qi, which
+                // replaced the original quad and would otherwise stay
+                // Unknown forever — that would make isInteriorCell()
+                // return false in the final drop filter and discard an
+                // otherwise-interior cell. The original code only
+                // classified the 4 appended quads and missed the
+                // replacement whenever qi was not the last position.
                 if (!Quadrants.empty()) {
                     WindingNumberVisitor wnv(sampleSize);
                     wnv.setPolyline(&input);
                     wnv.setPoints(&points);
-                    // Classify the last 5 (or however many bridge quads
-                    // are in this batch). Each newQuads entry
-                    // corresponds to a quadrant now in Quadrants.
-                    const unsigned int startIdx = Quadrants.size() - (unsigned int)newQuads.size();
+                    Quadrants[qi].accept(&wnv);
+                    const unsigned int startIdx =
+                        Quadrants.size() - (unsigned int)newQuads.size() + 1;
                     for (unsigned int k = startIdx; k < Quadrants.size(); ++k) {
                         Quadrants[k].accept(&wnv);
                     }
@@ -3630,7 +3675,48 @@ namespace Clobscode
             cout << "    [bridge iter " << bridgeIter
                  << "] added " << bridgesThisIter
                  << " bridges (total=" << totalBridgesAdded << ")\n";
+
+#if (VTKOUT==true)
+            {
+                // Step 5' — Per-iteration bridge state. Snapshot of the
+                // quadtree right after the bridges of this iteration
+                // have been added (BEFORE the next iteration's BFS
+                // relabels components). Useful to see how the bridge
+                // quads physically extend outward and which components
+                // are merging.
+                std::shared_ptr<FEMesh> iter_mesh = make_shared<FEMesh>();
+                if (!Quadrants.empty()) {
+                    saveOutputMesh(iter_mesh, points, Quadrants);
+                }
+                string tmp_name = name + "_bridge_iter" + std::to_string(bridgeIter);
+                Services::WriteVTK(tmp_name, iter_mesh);
+            }
+#endif
         }
+
+#if (VTKOUT==true)
+        {
+            // Step 5.5 — Post-bridges snapshot. State of the quadtree
+            // after the bridge loop has finished but BEFORE the final
+            // BFS relabels components and BEFORE the small-component
+            // drop. Diff against output_bridge_iter<N>.vtk shows only
+            // the final-iter bridge additions; diff against
+            // output_postbfs.vtk shows the BFS relabel effect; diff
+            // against output_predrop.vtk shows what the drop removes.
+            string tmp_name = name + "_postbridges";
+            if (!Quadrants.empty()) {
+                std::shared_ptr<FEMesh> mesh = make_shared<FEMesh>();
+                saveOutputMesh(mesh, points, Quadrants);
+                Services::WriteVTK(tmp_name, mesh);
+                cout << "  Wrote: " << tmp_name << ".vtk ("
+                     << Quadrants.size() << " cells, "
+                     << totalBridgesAdded << " bridges added)\n";
+            } else {
+                cout << "  Skipped: " << tmp_name
+                     << ".vtk (Quadrants empty)\n";
+            }
+        }
+#endif
 
         // ---- 1) Find connected components of the quadtree ----
         // Final pass (used for the small-component drop below and for
@@ -3680,6 +3766,32 @@ namespace Clobscode
             ++numComponents;
         }
 
+#if (VTKOUT==true)
+        {
+            // Step 5.6 — Post-BFS snapshot. Same geometry as
+            // output_postbridges.vtk, but each cell now carries its
+            // component label as a CELL_DATA scalar. Colour by
+            // `component_id` in ParaView to see which cells belong to
+            // the same connected component.
+            string tmp_name = name + "_postbfs";
+            if (!Quadrants.empty()) {
+                vector<double> compVals(Quadrants.size(), -1.0);
+                for (unsigned int qi = 0; qi < Quadrants.size(); ++qi) {
+                    if (compOfQuad[qi] >= 0) {
+                        compVals[qi] = static_cast<double>(compOfQuad[qi]);
+                    }
+                }
+                VolumeFractionVTKWriter::writeQuadTreeWithCellArray(
+                    tmp_name, Quadrants, points, "component_id", compVals);
+                cout << "  Wrote: " << tmp_name << ".vtk ("
+                     << numComponents << " components)\n";
+            } else {
+                cout << "  Skipped: " << tmp_name
+                     << ".vtk (Quadrants empty)\n";
+            }
+        }
+#endif
+
         // ---- 2) Drop "small" components ----
         // Per the paper §3.4: "The remaining connected components that
         // contain fewer than a user-defined number of highest-
@@ -3695,18 +3807,47 @@ namespace Clobscode
         }
 
         int droppedQuads = 0;
-        vector<bool> keepQuad(Quadrants.size(), false);
+vector<bool> keepQuad(Quadrants.size(), false);
         for (unsigned int qi = 0; qi < Quadrants.size(); ++qi) {
             // Keep: interior cell, in a visited component, component
             // size >= min. AllOutside cells in kept components are
-            // dropped from the output (they were preserved only for
-            // the BFS / bridge topology).
+            // dropped from the output regardless of component membership, since they
+            // were preserved only for the BFS / bridge topology.
             if (compOfQuad[qi] >= 0 &&
                 compSize[compOfQuad[qi]] >= (int)minComponentCells &&
                 isInteriorCell(Quadrants[qi])) {
                 keepQuad[qi] = true;
             }
         }
+
+#if (VTKOUT==true)
+        {
+            // Step 5.7 — Pre-drop snapshot. Same geometry as
+            // output_postbfs.vtk but each cell now has a 0/1 flag
+            // `will_keep` indicating whether it survives the small-
+            // component drop. Colour by `will_keep` in ParaView to
+            // see exactly which cells are about to be removed.
+            string tmp_name = name + "_predrop";
+            if (!Quadrants.empty()) {
+                vector<double> keepVals(Quadrants.size(), 0.0);
+                unsigned int willKeepCount = 0;
+                for (unsigned int qi = 0; qi < Quadrants.size(); ++qi) {
+                    if (keepQuad[qi]) {
+                        keepVals[qi] = 1.0;
+                        ++willKeepCount;
+                    }
+                }
+                VolumeFractionVTKWriter::writeQuadTreeWithCellArray(
+                    tmp_name, Quadrants, points, "will_keep", keepVals);
+                cout << "  Wrote: " << tmp_name << ".vtk ("
+                     << willKeepCount << " will keep, "
+                     << Quadrants.size() - willKeepCount << " will drop)\n";
+            } else {
+                cout << "  Skipped: " << tmp_name
+                     << ".vtk (Quadrants empty)\n";
+            }
+        }
+#endif
 
         // Compact the Quadrants vector and rebuild MapEdges from kept
         // quads. We deliberately re-use EdgeVisitor so the resulting

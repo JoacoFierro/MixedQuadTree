@@ -520,6 +520,91 @@ Build succeeds with `-Wno-error`; only emits warnings.
 
 ---
 
+## Issue #9 — `buildQuadPerpThickness` treats `info[k]` as a vector index (q_id ≠ index)
+
+**Severity:** Medium-high (algorithmic correctness — bridge selection
+can pick the wrong edges because edge sub-cell VF is wrong).
+
+**Status:** ✅ Fixed.
+
+### Symptom
+
+`SubgridSampler::buildQuadPerpThickness` (`src/SubgridSampler.cpp:185`)
+used `Quadrants[qIdx]` with `qIdx = EdgeInfo.info[k]` to look up the
+quad adjacent to an edge. The problem: `EdgeInfo.info[k]` stores a
+**q_id** (the id assigned at `Quadrant` construction), while
+`Quadrants[...]` is a `std::vector` indexed by **position**. After
+`windingSubdivide` (and especially after `resolveArchipelagos`'s
+compact-and-rebuild) the q_id and the vector index of a given quad
+can disagree, so the function silently read the **wrong** quad.
+
+This propagated to the edge sub-cell volume fraction:
+
+```
+SubgridSampler::buildQuadPerpThickness (wrong quad)
+        |
+        v
+SubgridSampler::sampleEdge (wrong fictitious cell size)
+        |
+        v
+mEdgeSubcellVF[edge] = wrong VF
+        |
+        v
+resolveArchipelagos: bridge candidate filter
+  `if (vfIt->second.volumeFraction < joinThreshold) continue;`
+        |
+        v
+Bridges may be wrongly accepted or wrongly dropped.
+```
+
+In `bridgeSplitAtEdge`, `H = |centroid - mid_bridge|` also depends on
+the same lookup (via `computeExteriorDirection`); when the wrong quad
+is used, the bridge quad extends in the wrong direction by
+`H/sampleSize`.
+
+### Root cause
+
+Two distinct indexing conventions coexisted:
+
+- `EdgeInfo::info[1]`, `info[2]` store q_ids (set in
+  `SplitVisitor::visit` and `bridgeSplitAtEdge`, never reassigned).
+- `Quadrants` is a `std::vector` indexed by position; positions can
+  be reordered (e.g. by `resolveArchipelagos`'s compact step at
+  `Mesher.cpp:3714-3755`).
+
+`buildQuadPerpThickness` treated `info[k]` as a position. The
+bounds-check `qIdx >= quadrants.size()` was insufficient — it caught
+qids outside the range but did not catch qids that happen to land on
+the wrong quad within the range.
+
+`resolveArchipelagos` does the right thing: it builds a
+`qIdToIdx` map (`Mesher.cpp:3459-3463`) before indexing
+`Quadrants[…]`.
+
+### Fix
+
+`SubgridSampler::buildQuadPerpThickness` now requires a precomputed
+`unordered_map<unsigned int, unsigned int> qIdToIdx` and uses
+`quadrants[qIdToIdx.at(qId)]` (with a guard). The caller
+`Mesher::computeSubcellVolumeFractions` (`Mesher.cpp:2981-2986`)
+builds the map once before the edge loop. The function signature
+in `src/SubgridSampler.h:120-141` was extended accordingly.
+
+### Verification
+
+- Build succeeds (only pre-existing warnings).
+- `scripts/test_qid_vs_index_regression.py` exercises Agua.poly
+  (segments >= 100, triggers `preRefineForTusqh` and produces many
+  quads with non-trivial q_id / index divergence) and checks that:
+    - All 7 step VTKs are produced (octree, prearch, postarch,
+      quads, closeto, remSur, final).
+    - At least one `output_bridge_iter{N}.vtk` is produced.
+    - The resolver summary line reports `bridges >= 1`.
+- The bridge loop now uses correctly computed edge sub-cell VFs;
+  the bridge quad thickness `H/sampleSize` is also correct.
+
+---
+
 ## Summary table
 
 | # | Bug | Severity | Status |
@@ -532,6 +617,7 @@ Build succeeds with `-Wno-error`; only emits warnings.
 | 6 | TUSQH undersamples coarse initial grid | High | ✅ Fixed (pre-existing) |
 | 7 | `Quadrant::getIndex()` const-ness | Low | ⚠️ Documented, not fixed |
 | 8 | Bridge quad is topologically isolated (erased full edge) | High | ✅ Fixed (Option A: update instead of erase) |
+| 9 | `buildQuadPerpThickness` uses `info[k]` as vector index | Medium-high | ✅ Fixed (qIdToIdx lookup) |
 
 ## Outstanding latent bugs (not in this session)
 

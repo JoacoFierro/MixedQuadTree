@@ -178,6 +178,7 @@ namespace Clobscode
     vector<double>
     SubgridSampler::buildQuadPerpThickness(const QuadEdge& edge,
                                            const map<QuadEdge, EdgeInfo>& mapEdges,
+                                           const unordered_map<unsigned int, unsigned int>& qIdToIdx,
                                            const vector<Quadrant>& quadrants,
                                            const vector<MeshPoint>& points)
     {
@@ -186,13 +187,20 @@ namespace Clobscode
         if (it == mapEdges.end()) return result;
 
         const EdgeInfo& info = it->second;
-        // EdgeInfo stores (midpointIdx, q1, q2). q2 may be numeric_limits max
-        // when the edge sits on the boundary.
+        // EdgeInfo stores (midpointIdx, q1, q2) where q1/q2 are q_ids
+        // (not vector indices). The q_id is set at construction time
+        // by SplitVisitor / Quadrant ctor and never reassigned, while
+        // the Quadrants vector may be reordered during the pipeline
+        // (e.g. after `resolveArchipelagos`'s compact-and-rebuild, or
+        // even during windingSubdivide's iteration over `idx_pos_map`).
+        // We must look up the vector position via qIdToIdx before
+        // indexing `quadrants[]`. See BUGS_FOUND.md Issue #9.
         for (unsigned int k = 1; k <= 2; ++k) {
-            unsigned int qIdx = info[k];
-            if (qIdx == std::numeric_limits<unsigned int>::max()) continue;
-            if (qIdx >= quadrants.size()) continue;
-            const Quadrant& q = quadrants[qIdx];
+            unsigned int qId = info[k];
+            if (qId == std::numeric_limits<unsigned int>::max()) continue;
+            auto qIt = qIdToIdx.find(qId);
+            if (qIt == qIdToIdx.end()) continue;
+            const Quadrant& q = quadrants[qIt->second];
 
             // The quadrant's parent corners are at indices 0..3 of
             // getPointIndex(). Sub-elements may further split it. We
