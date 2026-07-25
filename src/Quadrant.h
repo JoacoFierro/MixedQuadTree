@@ -60,6 +60,21 @@ namespace Clobscode
     //               subdivided according to TUSQH.
     enum class WindingState { Unknown, AllInside, AllOutside, Mixed };
 
+    // Provenance of a quadrant in the quadtree. Tracks whether the cell
+    // was produced by the classical refinement pipeline (IntersectionsVisitor
+    // + transition patterns) or by the TUSQH subdivision (and in which
+    // step: direct split from a Mixed cell, balance split triggered by
+    // a sibling becoming too coarse, or extra resolve pass for unresolved
+    // Mixed cells beyond maxDepth). This is purely a debug aid and does
+    // not influence any decision in the mesher.
+    enum class QuadrantOrigin {
+        Classical,        // produced by generateQuadtreeMesh / IntersectionsVisitor
+        TusqhSplit,       // produced by SplitVisitor inside the main TUSQH loop
+        TusqhBalance,     // produced by SplitVisitor during one-irregular balancing
+        TusqhResolve,     // produced by SplitVisitor inside the optional resolve pass
+        PreservedOutsider // TUSQH leaf kept in Quadrants only for cubical-complex topology
+    };
+
 	class Quadrant{
         friend class IntersectionsVisitor;
         friend class IntersectionsDrawingVisitor;
@@ -130,7 +145,7 @@ namespace Clobscode
         //virtual void setInRegionState(const bool &value);
         //virtual const bool &isInRegion();
         
-        virtual const unsigned int&getIndex();
+        virtual const unsigned int&getIndex() const;
 
         /***** BEGIN Volume Fraction methods *******/
         virtual void setSampleSize(unsigned int s);
@@ -151,6 +166,15 @@ namespace Clobscode
         virtual bool isWindingOutside() const;
         virtual bool isWindingMixed() const;
         /***** END TUSQH subdivision state methods *******/
+
+        /***** BEGIN Quadrant provenance methods *******/
+        // Sets / gets the provenance of this cell. Used by debug VTK
+        // writers so the user can distinguish in ParaView between cells
+        // that came from the classical pipeline and cells that were
+        // born from a TUSQH split/balance/resolve.
+        virtual void setOrigin(QuadrantOrigin o);
+        virtual QuadrantOrigin getOrigin() const;
+        /***** END Quadrant provenance methods *******/
 
 
         /***** BEGIN Debugging methods *******/
@@ -193,6 +217,7 @@ namespace Clobscode
 
         /***** BEGIN TUSQH subdivision state variables *******/
         WindingState mWindingState;
+        QuadrantOrigin mOrigin;
         /***** END TUSQH subdivision state variables *******/
     };
 	
@@ -348,7 +373,7 @@ namespace Clobscode
         intersected_edges = iedges;
 	}
     
-    inline const unsigned int&Quadrant::getIndex() {
+    inline const unsigned int&Quadrant::getIndex() const {
         return q_id;
     }
 
@@ -391,6 +416,15 @@ namespace Clobscode
         return mWindingState == WindingState::Mixed;
     }
     /***** END TUSQH subdivision state inline methods *******/
+
+    /***** BEGIN Quadrant provenance inline methods *******/
+    inline void Quadrant::setOrigin(QuadrantOrigin o) {
+        mOrigin = o;
+    }
+    inline QuadrantOrigin Quadrant::getOrigin() const {
+        return mOrigin;
+    }
+    /***** END Quadrant provenance inline methods *******/
 
     std::ostream& operator<<(ostream& o, const Quadrant &q);
 }

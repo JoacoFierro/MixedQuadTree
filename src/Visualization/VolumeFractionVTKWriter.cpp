@@ -33,8 +33,10 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <list>
 #include <string>
 #include <map>
+#include <cmath>
 
 using std::vector;
 using std::string;
@@ -132,84 +134,19 @@ namespace Clobscode
     }
 
     //--------------------------------------------------------------------------------
+    // Templated helpers for the TUSQH in-loop debug output. They live
+    // here (instead of the header) so that <list> / <vector> pulls in
+    // stay contained in this .cpp.
     //--------------------------------------------------------------------------------
-    bool VolumeFractionVTKWriter::writeVFHeatmap(const std::string& name,
-                                                 const std::vector<Quadrant>& quadrants,
-                                                 const std::vector<MeshPoint>& points)
-    {
-        // Esta función escribe los centroides de sub_elements con sus winding numbers
-        // para visualizar el campo de volume fraction como un heatmap
 
-        if (quadrants.empty()) {
-            std::cerr << "No quadrants to write\n";
-            return false;
-        }
-
-        string vol_name = name + "_samples.vtk";
-
-        FILE* f = fopen(vol_name.c_str(), "wt");
-        if (!f) {
-            std::cerr << "Cannot open file: " << vol_name << "\n";
-            return false;
-        }
-
-        // Header VTK
-        fprintf(f, "# vtk DataFile Version 2.0\n");
-        fprintf(f, "s×s Grid Sample Points with Winding Numbers Debug Output\n");
-        fprintf(f, "ASCII\n\n");
-
-        // Recolectar puntos de la grilla s×s de cada cuadrante
-        vector<Point3D> centroids;
-        vector<double> wn_values;
-
-        for (const auto& q : quadrants) {
-            unsigned int s = q.getSampleSize();
-            const auto& wn = q.getWindingNumbers();
-
-            for (unsigned int i = 0; i < s; ++i) {
-                for (unsigned int j = 0; j < s; ++j) {
-                    Point3D sample = q.getSamplePoint(i, j, points);
-                    centroids.push_back(sample);
-                    unsigned int idx = i * s + j;
-                    wn_values.push_back(wn[idx]);
-                }
-            }
-        }
-
-        unsigned int num_points = centroids.size();
-
-        // Escribir puntos
-        fprintf(f, "DATASET UNSTRUCTURED_GRID\n");
-        fprintf(f, "POINTS %u float\n", num_points);
-
-        for (const auto& p : centroids) {
-            fprintf(f, "%+1.8E %+1.8E %+1.8E\n", p[0], p[1], p[2]);
-        }
-
-        // Celdas - cada punto es un vértice
-        fprintf(f, "\nCELLS %u %u\n", num_points, num_points * 2);
-        for (unsigned int i = 0; i < num_points; i++) {
-            fprintf(f, "1 %u\n", i);
-        }
-
-        // CELL_TYPES - todos vertices
-        fprintf(f, "\nCELL_TYPES %u\n", num_points);
-        for (unsigned int i = 0; i < num_points; i++) {
-            fprintf(f, "1 "); // VTK_VERTEX
-        }
-
-        // POINT_DATA con winding numbers
-        fprintf(f, "\nPOINT_DATA %u\n", num_points);
-        fprintf(f, "SCALARS winding_number double 1\n");
-        fprintf(f, "LOOKUP_TABLE default\n");
-        for (double v : wn_values) {
-            fprintf(f, "%+1.8E\n", v);
-        }
-
-        fclose(f);
-        std::cout << "  Wrote: " << vol_name << "\n";
-        return true;
-    }
+    // The non-templated writeVFHeatmap() for std::vector<Quadrant> used
+    // to live here. It was deleted in favour of the templated overload
+    // below, which (a) accepts both std::vector and std::list and (b) is
+    // defensive against cells whose mSampleSize is set but whose
+    // mWindingNumbers was not populated (legacy `-E` edge-intersect
+    // path). See the explicit instantiation block at the bottom of this
+    // file.
+    //--------------------------------------------------------------------------------
 
     //--------------------------------------------------------------------------------
     //--------------------------------------------------------------------------------
@@ -288,6 +225,30 @@ namespace Clobscode
         fprintf(f, "LOOKUP_TABLE default\n");
         for (const auto& q : quadrants) {
             fprintf(f, "%u\n", q.getRefinementLevel());
+        }
+
+        // Provenance of each cell (Classical / TusqhSplit / TusqhBalance /
+        // TusqhResolve / PreservedOutsider). Lets the user diff in
+        // ParaView which cells of the post-TUSQH quadtree came from
+        // `_transition.vtk` vs. were born inside the TUSQH loop.
+        fprintf(f, "\nSCALARS origin int 1\n");
+        fprintf(f, "LOOKUP_TABLE default\n");
+        for (const auto& q : quadrants) {
+            int o = 0;
+            switch (q.getOrigin()) {
+                case QuadrantOrigin::Classical:         o = 0; break;
+                case QuadrantOrigin::TusqhSplit:        o = 1; break;
+                case QuadrantOrigin::TusqhBalance:      o = 2; break;
+                case QuadrantOrigin::TusqhResolve:      o = 3; break;
+                case QuadrantOrigin::PreservedOutsider: o = 4; break;
+            }
+            fprintf(f, "%d\n", o);
+        }
+
+        fprintf(f, "\nSCALARS sample_size unsigned_int 1\n");
+        fprintf(f, "LOOKUP_TABLE default\n");
+        for (const auto& q : quadrants) {
+            fprintf(f, "%u\n", q.getSampleSize());
         }
 
         fclose(f);
@@ -552,4 +513,224 @@ namespace Clobscode
         return true;
     }
 
+    //--------------------------------------------------------------------------------
+    // Templated helpers for the TUSQH in-loop debug output. They live
+    // here (instead of the header) so that <list> / <vector> pulls in
+    // stay contained in this .cpp.
+    //--------------------------------------------------------------------------------
+
+    // Writes the s x s sample points of every quad in `quadrants` to a
+    // single VTK UNSTRUCTURED_GRID. Each sample is emitted as a
+    // VTK_VERTEX cell with its `winding_number` as POINT_DATA and
+    // its parent `q_id` as a second scalar. The function appends
+    // `_samples.vtk` to the provided name (matches the original
+    // non-templated writeVFHeatmap contract).
+    template <typename QuadrantContainer>
+    bool VolumeFractionVTKWriter::writeVFHeatmap(const std::string& name,
+                                                 const QuadrantContainer& quadrants,
+                                                 const std::vector<MeshPoint>& points)
+    {
+        if (quadrants.empty()) {
+            std::cerr << "No quadrants to write\n";
+            return false;
+        }
+
+        string vol_name = name + "_samples.vtk";
+        FILE* f = fopen(vol_name.c_str(), "wt");
+        if (!f) {
+            std::cerr << "Cannot open file: " << vol_name << "\n";
+            return false;
+        }
+
+        fprintf(f, "# vtk DataFile Version 2.0\n");
+        fprintf(f, "TUSQH s x s Sample Points with Winding Numbers Debug Output\n");
+        fprintf(f, "ASCII\n\n");
+
+        std::vector<Point3D> centroids;
+        std::vector<double> wn_values;
+        std::vector<int> q_ids;
+        centroids.reserve(quadrants.size() * 4);
+        wn_values.reserve(quadrants.size() * 4);
+        q_ids.reserve(quadrants.size() * 4);
+
+        for (const auto& q : quadrants) {
+            unsigned int s = q.getSampleSize();
+            if (s == 0) {
+                // Not yet sampled (e.g. classify was deferred). Skip
+                // silently — the snapshot is meant to be informative,
+                // not a hard error.
+                continue;
+            }
+            const auto& wn = q.getWindingNumbers();
+            // Defensive: some code paths may set `s` but skip filling
+            // `mWindingNumbers` (e.g. before computeVolumeFractions
+            // runs, or for cells from the resolve pass that were
+            // produced but never visited by the winding-number
+            // visitor). Skip those to avoid out-of-bounds reads.
+            if (wn.size() < static_cast<size_t>(s) * s) {
+                continue;
+            }
+            for (unsigned int i = 0; i < s; ++i) {
+                for (unsigned int j = 0; j < s; ++j) {
+                    Point3D sample = q.getSamplePoint(i, j, points);
+                    centroids.push_back(sample);
+                    unsigned int idx = i * s + j;
+                    wn_values.push_back(wn[idx]);
+                    q_ids.push_back(static_cast<int>(q.getIndex()));
+                }
+            }
+        }
+
+        unsigned int num_points = static_cast<unsigned int>(centroids.size());
+
+        fprintf(f, "DATASET UNSTRUCTURED_GRID\n");
+        fprintf(f, "POINTS %u float\n", num_points);
+        for (const auto& p : centroids) {
+            fprintf(f, "%+1.8E %+1.8E %+1.8E\n", p[0], p[1], p[2]);
+        }
+
+        fprintf(f, "\nCELLS %u %u\n", num_points, num_points * 2);
+        for (unsigned int i = 0; i < num_points; i++) {
+            fprintf(f, "1 %u\n", i);
+        }
+
+        fprintf(f, "\nCELL_TYPES %u\n", num_points);
+        for (unsigned int i = 0; i < num_points; i++) {
+            fprintf(f, "1 ");
+        }
+
+        fprintf(f, "\n\nPOINT_DATA %u\n", num_points);
+        fprintf(f, "SCALARS winding_number double 1\n");
+        fprintf(f, "LOOKUP_TABLE default\n");
+        for (double v : wn_values) {
+            fprintf(f, "%+1.8E\n", v);
+        }
+
+        fprintf(f, "\nSCALARS parent_quad_id int 1\n");
+        fprintf(f, "LOOKUP_TABLE default\n");
+        for (int id : q_ids) {
+            fprintf(f, "%d\n", id);
+        }
+
+        fclose(f);
+        std::cout << "  Wrote: " << vol_name << " (heat map, "
+                  << num_points << " sample points)\n";
+        return true;
+    }
+
+    // Snapshot of the candidate cells at a given TUSQH depth.
+    // Writes the quadtree UNSTRUCTURED_GRID with the cells in
+    // `candidates` (each rendered as a VTK_QUAD) and four scalar
+    // fields:
+    //   - winding_state  (per-cell, 0/1/2/3 as in writeWindingState)
+    //   - volume_fraction (per-cell; emits NaN if not yet computed)
+    //   - refinement_level (per-cell)
+    //   - sample_size    (per-cell)
+    // The filename is `<name><suffix>.vtk`.
+    template <typename QuadrantContainer>
+    bool VolumeFractionVTKWriter::writeCandidatesSnapshot(const std::string& name,
+                                                          const QuadrantContainer& candidates,
+                                                          const std::vector<MeshPoint>& points,
+                                                          const std::string& suffix)
+    {
+        if (candidates.empty()) {
+            std::cerr << "No candidates to write\n";
+            return false;
+        }
+
+        std::string vol_name = name + suffix + ".vtk";
+        FILE* f = fopen(vol_name.c_str(), "wt");
+        if (!f) {
+            std::cerr << "Cannot open file: " << vol_name << "\n";
+            return false;
+        }
+
+        fprintf(f, "# vtk DataFile Version 2.0\n");
+        fprintf(f, "TUSQH candidates snapshot\n");
+        fprintf(f, "ASCII\n\n");
+
+        fprintf(f, "DATASET UNSTRUCTURED_GRID\n");
+        fprintf(f, "POINTS %u float\n", (unsigned int)points.size());
+        for (unsigned int i = 0; i < points.size(); i++) {
+            const Point3D& p = points[i].getPoint();
+            fprintf(f, "%+1.8E %+1.8E %+1.8E\n", p[0], p[1], p[2]);
+        }
+
+        unsigned int num_cells = static_cast<unsigned int>(candidates.size());
+        unsigned int connectivity = 0;
+        for (const auto& q : candidates) {
+            connectivity += static_cast<unsigned int>(q.getPointIndex().size()) + 1;
+        }
+
+        fprintf(f, "\nCELLS %u %u\n", num_cells, connectivity);
+        for (const auto& q : candidates) {
+            const auto& idx = q.getPointIndex();
+            fprintf(f, "%u", (unsigned int)idx.size());
+            for (auto i : idx) fprintf(f, " %u", i);
+            fprintf(f, "\n");
+        }
+
+        fprintf(f, "\nCELL_TYPES %u\n", num_cells);
+        for (unsigned int i = 0; i < num_cells; i++) {
+            if (i % 30 == 0) fprintf(f, "\n");
+            fprintf(f, "9 ");
+        }
+
+        fprintf(f, "\n\nCELL_DATA %u\n", num_cells);
+
+        fprintf(f, "SCALARS winding_state int 1\n");
+        fprintf(f, "LOOKUP_TABLE default\n");
+        for (const auto& q : candidates) {
+            int s = 0;
+            switch (q.getWindingState()) {
+                case WindingState::Unknown:    s = 0; break;
+                case WindingState::AllInside:  s = 1; break;
+                case WindingState::AllOutside: s = 2; break;
+                case WindingState::Mixed:      s = 3; break;
+            }
+            fprintf(f, "%d\n", s);
+        }
+
+        fprintf(f, "\nSCALARS volume_fraction double 1\n");
+        fprintf(f, "LOOKUP_TABLE default\n");
+        for (const auto& q : candidates) {
+            double vf = q.getVolumeFraction();
+            // Emit NaN if not yet computed, so ParaView does not
+            // accidentally treat un-sampled cells as VF = 0.
+            fprintf(f, "%+1.8E\n", q.hasVolumeFraction() ? vf
+                                                         : std::numeric_limits<double>::quiet_NaN());
+        }
+
+        fprintf(f, "\nSCALARS refinement_level unsigned_int 1\n");
+        fprintf(f, "LOOKUP_TABLE default\n");
+        for (const auto& q : candidates) {
+            fprintf(f, "%u\n", q.getRefinementLevel());
+        }
+
+        fprintf(f, "\nSCALARS sample_size unsigned_int 1\n");
+        fprintf(f, "LOOKUP_TABLE default\n");
+        for (const auto& q : candidates) {
+            fprintf(f, "%u\n", q.getSampleSize());
+        }
+
+        fclose(f);
+        std::cout << "  Wrote: " << vol_name << " (snapshot, "
+                  << num_cells << " candidates)\n";
+        return true;
+    }
+
+    // Explicit instantiations for the two container types actually used
+    // by Mesher.cpp: std::vector<Quadrant> and std::list<Quadrant>. This
+    // keeps the templates out of every translation unit that includes
+    // the header.
+    template bool VolumeFractionVTKWriter::writeVFHeatmap<std::vector<Quadrant>>(
+        const std::string&, const std::vector<Quadrant>&, const std::vector<MeshPoint>&);
+    template bool VolumeFractionVTKWriter::writeVFHeatmap<std::list<Quadrant>>(
+        const std::string&, const std::list<Quadrant>&, const std::vector<MeshPoint>&);
+    template bool VolumeFractionVTKWriter::writeCandidatesSnapshot<std::vector<Quadrant>>(
+        const std::string&, const std::vector<Quadrant>&, const std::vector<MeshPoint>&,
+        const std::string&);
+    template bool VolumeFractionVTKWriter::writeCandidatesSnapshot<std::list<Quadrant>>(
+        const std::string&, const std::list<Quadrant>&, const std::vector<MeshPoint>&,
+        const std::string&);
 }

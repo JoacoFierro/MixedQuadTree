@@ -28,6 +28,7 @@
 
 #include <string>
 #include <vector>
+#include <list>
 #include <map>
 
 #include "../SubcellVFData.h"
@@ -49,8 +50,20 @@ namespace Clobscode
                                         const std::vector<MeshPoint>& points,
                                         const Polyline& geo);
 
+        // Overload accepting any iterable container of Quadrant
+        // (e.g. std::vector<Quadrant> or std::list<Quadrant> from the
+        // TUSQH candidates list). Writes one file per call with the
+        // s x s sample points of every quad as VTK_VERTEX cells, each
+        // carrying its `winding_number` scalar (POINT_DATA) and the
+        // parent q_id. This overload is defensive against cells whose
+        // `mSampleSize` is set but whose `mWindingNumbers` was not
+        // populated (e.g. cells produced by the legacy `-E`
+        // IntersectionsVisitor path, which sets the state to Mixed
+        // without recomputing the samples — those cells are skipped
+        // silently).
+        template <typename QuadrantContainer>
         static bool writeVFHeatmap(const std::string& name,
-                                   const std::vector<Quadrant>& quadrants,
+                                   const QuadrantContainer& quadrants,
                                    const std::vector<MeshPoint>& points);
 
         // Debug visualisation of the TUSQH winding-state classification:
@@ -58,6 +71,12 @@ namespace Clobscode
         //   1 = AllInside
         //   2 = AllOutside
         //   3 = Mixed
+        // Plus provenance (QuadrantOrigin):
+        //   0 = Classical
+        //   1 = TusqhSplit
+        //   2 = TusqhBalance
+        //   3 = TusqhResolve
+        //   4 = PreservedOutsider
         static bool writeWindingState(const std::string& name,
                                       const std::vector<Quadrant>& quadrants,
                                       const std::vector<MeshPoint>& points);
@@ -94,6 +113,21 @@ namespace Clobscode
             const std::vector<MeshPoint>& points,
             const std::string& arrayName,
             const std::vector<double>& values);
+
+        // Snapshot of the candidates list at a given TUSQH depth.
+        // Writes the quadtree UNSTRUCTURED_GRID with:
+        //   - winding_state  (per-cell, 0/1/2/3 as in writeWindingState)
+        //   - volume_fraction (per-cell, NaN if not yet computed)
+        //   - refinement_level (per-cell)
+        //   - sample_size    (per-cell)
+        // The name suffix is appended verbatim (typically "_tusqh_iter<N>"
+        // for the main loop, "_tusqh_resolve_iter<N>" for the resolve
+        // pass).
+        template <typename QuadrantContainer>
+        static bool writeCandidatesSnapshot(const std::string& name,
+                                             const QuadrantContainer& candidates,
+                                             const std::vector<MeshPoint>& points,
+                                             const std::string& suffix);
     };
 }
 

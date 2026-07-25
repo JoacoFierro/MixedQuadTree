@@ -29,6 +29,7 @@
 #include <queue>
 #include <unordered_set>
 #include <unordered_map>
+#include <functional>
 
 namespace Clobscode
 {
@@ -262,14 +263,14 @@ namespace Clobscode
         //an existing mesh, this value may change.
         //The output will be a one-irregular mesh.
         if (useTusqh) {
-            // Heuristic for the TUSQH coarse-grid bug: if the quadtree
-            // starts with very few root cells (1-2 is typical for large
-            // polylines like Chesapeake Bay at level 0) and -N is small
-            // (default 2 -> 4 samples per cell), TUSQH undersamples the
-            // huge cells and classifies them as AllInside/AllOutside,
-            // producing almost no subdivisions. Pre-refine uniformly to
-            // a base level using the legacy `generateQuadtreeMesh` so
-            // TUSQH has enough small cells to be meaningful.
+            // Heurística para el error de cuadrícula gruesa de TUSQH: si el quadtree
+            // comienza con muy pocas celdas raíz (1 o 2 es lo típico para polilíneas
+            // grandes como la Bahía de Chesapeake en el nivel 0) y el parámetro -N es pequeño
+            // (por defecto 2 -> 4 muestras por celda), TUSQH submuestrea las
+            // celdas enormes y las clasifica erróneamente como TodoAdentro/TodoAfuera (AllInside/AllOutside),
+            // lo que produce casi nulas subdivisiones. Se pre-refina uniformemente hasta
+            // un nivel base usando el método clásico `generateQuadtreeMesh` para que
+            // TUSQH tenga suficientes celdas pequeñas y sus cálculos sean significativos.
             preRefineForTusqh(input, rl, all_reg, name, debugging, Aliasing);
             windingSubdivide(input, rl, tusqhSampleSize,
                              refineOnEdgeIntersect, name, debugging,
@@ -1360,7 +1361,7 @@ namespace Clobscode
         //----------------------------------------------------------
         // apply transition patterns
         //----------------------------------------------------------
-        
+        /**/
         //TransitionPatternVisitor section
         TransitionPatternVisitor tpv;
         tpv.setMapEdges(MapEdges);
@@ -1865,10 +1866,17 @@ namespace Clobscode
         // one-irregular.
         list<pair<unsigned int, unsigned int> > toBalance;
 
-        // Seed: the root quadrants produced by generateGridMesh.
+        // Seed: the root quadrants produced by generateGridMesh /
+        // generateQuadtreeMesh (i.e. the cells that survived the
+        // classical pipeline and are now the input to TUSQH). Their
+        // origin is tagged as Classical so the post-TUSQH snapshots
+        // can distinguish them from cells born inside the TUSQH loop.
         candidates.assign(make_move_iterator(Quadrants.begin()),
                           make_move_iterator(Quadrants.end()));
         Quadrants.clear();
+        for (auto& q : candidates) {
+            q.setOrigin(QuadrantOrigin::Classical);
+        }
 
         // Visitors reused across iterations.
         WindingNumberSubdivisionVisitor wnsv(tusqhSampleSize,
@@ -1894,9 +1902,50 @@ namespace Clobscode
         // Persistent index counter for new (child) quadrants. We never
         // reset this inside the depth loop, otherwise we'd produce
         // duplicate q_ids across iterations.
-        unsigned int new_q_idx = candidates.size();
+        unsigned int new_q_idx = 0;
+        for (const auto& q : candidates) {
+            unsigned int qi = q.getIndex();
+            if (qi != std::numeric_limits<unsigned int>::max() && qi + 1 > new_q_idx) {
+                new_q_idx = qi + 1;
+            }
+        }
+        // Respaldo por si acaso:
+        if (new_q_idx < candidates.size()) {
+            new_q_idx = candidates.size();
+        }
 
-        for (unsigned int depth = 0; depth < maxDepth; ++depth) {
+        // Calculamos el nivel de refinamiento (qrl) máximo de los candidatos
+        // de entrada. Esto es necesario porque el parámetro `maxDepth`
+        // representa el qrl MÁXIMO absoluto que deben alcanzar los hijos,
+        // no el número de iteraciones del bucle. Si la grilla ya fue
+        // pre-refinada (e.g. por preRefineForTusqh, que lleva la grilla
+        // inicial a baseLevel) o si estamos refinando un .oct ya profundo
+        // (caso refineMesh con useTusqh), debemos acotar el bucle para
+        // que los hijos nunca excedan `maxDepth`.
+        //
+        // Casos cubiertos:
+        //   startDepth == 0         -> effectiveMaxDepth == maxDepth
+        //                              (caso simple, comportamiento idéntico al original)
+        //   startDepth <  maxDepth  -> effectiveMaxDepth == maxDepth - startDepth
+        //                              (caso Chesapeake Bay con heurística: arregla el bug)
+        //   startDepth >= maxDepth  -> effectiveMaxDepth == 0
+        //                              (bucle no corre; candidatos pasan al post-proceso)
+        unsigned short startDepth = 0;
+        for (const auto& q : candidates) {
+            if (q.getRefinementLevel() > startDepth) {
+                startDepth = q.getRefinementLevel();
+            }
+        }
+        const unsigned int effectiveMaxDepth =
+            (startDepth < maxDepth) ? (maxDepth - startDepth) : 0u;
+
+        if (effectiveMaxDepth == 0 && !candidates.empty()) {
+            cout << "    * windingSubdivide: candidatos ya en qrl="
+                 << startDepth << " >= maxDepth=" << maxDepth
+                 << "; el bucle TUSQH no subdividirá más.\n";
+        }
+
+        for (unsigned int depth = 0; depth < effectiveMaxDepth; ++depth) {
             auto start_depth_time = chrono::high_resolution_clock::now();
             new_pts.clear();
             new_candidates.clear();
@@ -1910,6 +1959,13 @@ namespace Clobscode
             refine_tmp.clear();
 
             unsigned int refinedCount = 0;
+
+            // Index of the first entry in `processed` added by THIS
+            // iteration. We use it to dump only the cells that were
+            // classified this depth, leaving previous iterations'
+            // entries alone (so the per-iter snapshot stays small and
+            // meaningful).
+            const size_t processed_size_before = processed.size();
 
             while (!candidates.empty()) {
                 Quadrant quad = *(candidates.begin());
@@ -1927,11 +1983,66 @@ namespace Clobscode
                 }
             }
 
+#if (VTKOUT==true)
+            {
+                // Per-iteration debug dumps. After classification, every
+                // candidate has been classified (WindingState set,
+                // mWindingNumbers populated, mVolumeFraction computed)
+                // and the to-be-split cells live in `refine_tmp`. We
+                // dump two views of this iteration:
+                //   - `<name>_tusqh_iter<N>.vtk`        quadtree snapshot
+                //                                         of all classified
+                //                                         cells with
+                //                                         winding_state,
+                //                                         VF, ref_level
+                //                                         and sample_size.
+                //   - `<name>_tusqh_iter<N>_samples.vtk` heat map of every
+                //                                         s x s sample
+                //                                         with its
+                //                                         winding_number
+                //                                         and parent
+                //                                         q_id.
+                // Together they let the user inspect in ParaView exactly
+                // which cells were deemed Mixed (and why) at each depth,
+                // and which samples pushed them over the threshold.
+                string iter_label = "_tusqh_iter" + std::to_string(depth);
+                string snap_name = name + iter_label;
+                string samples_name = name + iter_label;
+
+                // Collect this iteration's classified cells: the new
+                // entries pushed to `processed` (AllInside / AllOutside
+                // leaves) plus the entries in `refine_tmp` (Mixed cells
+                // about to be split). Cells whose mWindingNumbers was
+                // never populated (e.g. legacy `-E` IntersectionsVisitor
+                // path) are skipped silently by the templated
+                // writeVFHeatmap.
+                std::vector<Quadrant> classified;
+                classified.reserve((processed.size() - processed_size_before)
+                                   + refine_tmp.size());
+                for (size_t i = processed_size_before; i < processed.size(); ++i) {
+                    classified.push_back(processed[i]);
+                }
+                for (const auto& q : refine_tmp) {
+                    classified.push_back(q);
+                }
+
+                // Snapshot: <name>_tusqh_iter<N>.vtk
+                VolumeFractionVTKWriter::writeCandidatesSnapshot(
+                    snap_name, classified, points, "");
+                // Heat map: <name>_tusqh_iter<N>_samples.vtk (the
+                // function appends "_samples" to the filename).
+                VolumeFractionVTKWriter::writeVFHeatmap(
+                    samples_name, classified, points);
+            }
+#endif
+
             // 2) Stop if no candidate was subdivided (the quadtree is
             //    already "TUSQH-stable").
             if (refine_tmp.empty()) {
                 auto end_depth_time = chrono::high_resolution_clock::now();
-                cout << "         * TUSQH depth " << depth << " (no refinement needed) in "
+                cout << "         * TUSQH iter " << depth << "/" << effectiveMaxDepth
+                     << " (target qrl=" << (startDepth + depth + 1)
+                     << ") (no refinement needed) in "
                      << std::chrono::duration_cast<chrono::milliseconds>(end_depth_time-start_depth_time).count()
                      << " ms" << endl;
                 // Early-stop path: do NOT clear processed here, because
@@ -1958,6 +2069,7 @@ namespace Clobscode
                     // Pure interior split (no Polyline edge nearby).
                     for (unsigned int j = 0; j < split_elements.size(); j++) {
                         Quadrant o(split_elements[j], qrl+1, new_q_idx++);
+                        o.setOrigin(QuadrantOrigin::TusqhSplit);
                         new_candidates.push_back(o);
                     }
                 } else {
@@ -1968,6 +2080,7 @@ namespace Clobscode
                     // unambiguous).
                     for (unsigned int j = 0; j < split_elements.size(); j++) {
                         Quadrant o(split_elements[j], qrl+1, new_q_idx++);
+                        o.setOrigin(QuadrantOrigin::TusqhSplit);
                         new_candidates.push_back(o);
                     }
                 }
@@ -2009,6 +2122,7 @@ namespace Clobscode
                     if (inter_edges.empty()) {
                         for (unsigned int j = 0; j < split_elements.size(); j++) {
                             Quadrant o(split_elements[j], qrl+1, new_q_idx++);
+                            o.setOrigin(QuadrantOrigin::TusqhBalance);
                             // Defer classification until points are
                             // appended to the global point list.
                             needs_classification.push_back(o.getIndex());
@@ -2018,6 +2132,7 @@ namespace Clobscode
                     } else {
                         for (unsigned int j = 0; j < split_elements.size(); j++) {
                             Quadrant o(split_elements[j], qrl+1, new_q_idx++);
+                            o.setOrigin(QuadrantOrigin::TusqhBalance);
                             needs_classification.push_back(o.getIndex());
                             idx_pos_map[o.getIndex()] = processed.size();
                             processed.push_back(o);
@@ -2051,8 +2166,9 @@ namespace Clobscode
             needs_classification.clear();
 
             auto end_depth_time = chrono::high_resolution_clock::now();
-            cout << "         * TUSQH depth " << depth << " (refined "
-                 << refinedCount << " cells) in "
+            cout << "         * TUSQH iter " << depth << "/" << effectiveMaxDepth
+                 << " (target qrl=" << (startDepth + depth + 1)
+                 << ") (refined " << refinedCount << " cells) in "
                  << std::chrono::duration_cast<chrono::milliseconds>(end_depth_time-start_depth_time).count()
                  << " ms" << endl;
         }
@@ -2096,6 +2212,7 @@ namespace Clobscode
                     // isInside() returns false, so all downstream
                     // consumers skip it.
                     q.getIntersectedEdges().clear();
+                    q.setOrigin(QuadrantOrigin::PreservedOutsider);
                     Quadrants.push_back(std::move(q));
                     ++preservedOutside;
                     break;
@@ -2227,6 +2344,7 @@ namespace Clobscode
 
                             for (unsigned int j = 0; j < split_elements.size(); ++j) {
                                 Quadrant o(split_elements[j], qrl+1, new_q_idx++);
+                                o.setOrigin(QuadrantOrigin::TusqhResolve);
                                 // Pure-TUSQH resolve: classify immediately
                                 // using the s x s samples of the child.
                                 // The child's mid-edge points were just
@@ -3563,9 +3681,14 @@ namespace Clobscode
             // is what makes the two components join.
             vector<QuadEdge> bridgeEdges;
             int filteredBoundary = 0;
+
+            // Nuevo --------------------------------
+            bool requiresBalancing = false;
+            vector<unsigned int> quadsToRefine;
+            // ----------------------------------------
+
             for (const auto& entry : MapEdges) {
                 const EdgeInfo& info = entry.second;
-                // Both sides must be valid quads (NOT exposed edge).
                 if (info[1] == std::numeric_limits<unsigned int>::max()) continue;
                 if (info[2] == std::numeric_limits<unsigned int>::max()) continue;
                 auto it1 = qIdToIdx.find(info[1]);
@@ -3573,11 +3696,28 @@ namespace Clobscode
                 if (it1 == qIdToIdx.end() || it2 == qIdToIdx.end()) continue;
                 unsigned int qi1 = it1->second;
                 unsigned int qi2 = it2->second;
-                // Both sides must be interior cells.
+
                 if (!isInteriorCell(Quadrants[qi1])) continue;
                 if (!isInteriorCell(Quadrants[qi2])) continue;
-                // They must be in DIFFERENT components.
                 if (compOfQuad[qi1] == compOfQuad[qi2]) continue;
+
+                // Nuevo ---------------------------------------------
+                int level1 = (int)Quadrants[qi1].getRefinementLevel();
+                int level2 = (int)Quadrants[qi2].getRefinementLevel();
+
+                if (level1 != level2) {
+                    requiresBalancing = true;
+                    // Guardamos la celda más grande (menor nivel) para subdividirla
+                    if (level1 < level2) quadsToRefine.push_back(qi1);
+                    else quadsToRefine.push_back(qi2);
+
+                    // Bloqueamos la creación del puente temporalmente.
+                    // Continuamos evaluando otras aristas para juntar todas
+                    // las celdas que necesiten subdivisión en esta pasada.
+                    continue;
+                }
+                // ----------------------------------------------------------
+
                 // The edge's fictitious cell must be interior (>= threshold).
                 auto vfIt = mEdgeSubcellVF.find(entry.first);
                 if (vfIt == mEdgeSubcellVF.end()) continue;
@@ -3594,6 +3734,52 @@ namespace Clobscode
                 bridgeEdges.push_back(entry.first);
             }
 
+            // Nuevo ----------------------------------------------------------
+
+            if (requiresBalancing) {
+                // Deduplicar: varias aristas pueden pedir refinar la misma celda.
+                std::sort(quadsToRefine.begin(), quadsToRefine.end());
+                quadsToRefine.erase(std::unique(quadsToRefine.begin(), quadsToRefine.end()), quadsToRefine.end());
+
+                cout << "    [bridge iter " << bridgeIter
+                     << "] Equilibrado JIT: subdividiendo " << quadsToRefine.size()
+                     << " celdas dispares (1-irregularidad forzada).\n";
+
+                // Ordenar en orden DECRECIENTE de índice para que el push_back
+                // al final del vector (dentro de balanceSplitQuad) no invalide
+                // los índices aún por procesar en este lote.
+                std::sort(quadsToRefine.begin(), quadsToRefine.end(),
+                          std::greater<unsigned int>());
+
+                unsigned int balancedCount = 0;
+                unsigned int totalSurvivors = 0;
+                for (unsigned int qi : quadsToRefine) {
+                    if (qi >= Quadrants.size()) continue;
+                    auto newOnes = balanceSplitQuad(input, qi, sampleSize, nextQIdx);
+                    if (!newOnes.empty()) {
+                        ++balancedCount;
+                        totalSurvivors += (unsigned int)newOnes.size();
+                    }
+                }
+
+                cout << "    [bridge iter " << bridgeIter
+                     << "] Equilibrado JIT completado: " << balancedCount
+                     << "/" << quadsToRefine.size()
+                     << " subdivisiones aplicadas ("
+                     << totalSurvivors << " sub-quads retenidos).\n";
+
+                // La iteración se gastó en equilibrado; el BFS del próximo
+                // ciclo se ejecutará sobre la malla ya balanceada. Saltamos
+                // la creación de puentes de esta pasada. El equilibrado es
+                // "gratis": reservamos las maxBridgeIterations iteraciones
+                // reales para construcción de puentes, evitando agotar el
+                // presupuesto en subdivisiones JIT consecutivas.
+                --bridgeIter;
+                continue;
+            }
+
+            // ---------------------------------------------------------------
+
             if (filteredBoundary > 0) {
                 cout << "    [bridge iter " << bridgeIter
                      << "] filtered " << filteredBoundary
@@ -3602,6 +3788,7 @@ namespace Clobscode
 
             if (bridgeEdges.empty()) break;
 
+            // AQUI SE INSERTAN LOS TEMPLATES
             int bridgesThisIter = 0;
             for (const auto& ke : bridgeEdges) {
                 auto meIt = MapEdges.find(ke);
@@ -3691,6 +3878,7 @@ namespace Clobscode
                     }
                 }
                 ++bridgesThisIter;
+                // TEMPLATES
             }
 
             if (bridgesThisIter == 0) break;
@@ -4010,22 +4198,238 @@ vector<bool> keepQuad(Quadrants.size(), false);
     //--------------------------------------------------------------------------------
     //--------------------------------------------------------------------------------
 
-    // Heuristic for the TUSQH coarse-grid bug. If the quadtree starts
-    // with `coarseThreshold` or fewer root cells and the polyline has
-    // at least `minSegmentsForTrigger` segments, the TUSQH winding
-    // criterion can undersample the giant initial cells (e.g. with the
-    // default -N 2 = 4 samples per cell, a 50x50 cell is classified as
-    // AllInside or AllOutside and never subdivided). Pre-refine
-    // uniformly to `baseLevel` using the legacy `generateQuadtreeMesh`
-    // so TUSQH has enough small cells to be meaningful.
+    // JIT balancing helper: 1-to-4 split on Quadrants[qi] with full
+    // bookkeeping (MapEdges rebuild, AllOutside filter, WindingState
+    // classification). Mirrors the bridge loop's pattern (Mesher.cpp
+    // ~3721-3776) and splitQuadrants' pattern (~625-704).
     //
-    // The pre-refinement is bounded: it only triggers when the initial
-    // grid is very coarse (default: <= 2 cells), the polyline is
-    // complex enough (default: >= 100 segments; this excludes simple
-    // regression cases like unit_square.poly where TUSQH legitimately
-    // produces a single cell), and respects the requested `maxDepth`
-    // (capped at baseLevel, so the TUSQH loop still has headroom to
-    // subdivide further if needed).
+    // On success, replaces Quadrants[qi] with the first surviving
+    // sub-quad and pushes the remaining survivors at the end of
+    // Quadrants. Updates MapEdges for the new sub-quads (SplitVisitor
+    // splits the outer edges into halves and creates the internal
+    // cross edges). Appends the new MeshPoints created by SplitVisitor
+    // (4 mid-edges + 1 center) to `points`. Bumps nextQIdx past the
+    // assigned q_ids.
+    //
+    // AllOutside children are discarded: their MapEdges entries get
+    // info[1]/info[2] set to numeric_limits::max via
+    // EdgeVisitor::removeEdges, matching splitQuadrants' filter.
+    //
+    // Returns the survivors (1 to 4). Returns an empty vector if the
+    // quad should not be split (out of range, visitor failed, or all
+    // children ended up AllOutside).
+    //
+    // IMPORTANT: the caller MUST process the list of indices to split
+    // in DECREASING order so that push_back at the end of Quadrants
+    // does not invalidate subsequent indices in the batch.
+    //
+    // MapEdges coherence: SplitVisitor mutates MapEdges in place
+    // (splitting the 4 outer edges at their midpoints and adding 4
+    // cross-edges to the center). For AllOutside children we call
+    // EdgeVisitor::removeEdges to set their side pointers to max so
+    // the MapEdges entries are not orphaned. If ALL children end up
+    // AllOutside, the function reverts every MapEdges change made by
+    // SplitVisitor (restores info[0]=0 on the 4 original edges and
+    // erases the 8 half-edges + 4 cross-edges) so the BFS of the
+    // next bridge iteration cannot walk phantom topology. This is
+    // the same protocol used by bridgeSplitAtEdge (see lines 3109+).
+    std::vector<Quadrant> Mesher::balanceSplitQuad(
+        Polyline &input,
+        unsigned int qi,
+        unsigned int sampleSize,
+        unsigned int &nextQIdx)
+    {
+        std::vector<Quadrant> result;
+        if (qi >= Quadrants.size()) return result;
+
+        Quadrant quad = Quadrants[qi];
+
+        unsigned short qrl = quad.getRefinementLevel();
+        list<unsigned int> &inter_edges = quad.getIntersectedEdges();
+
+        // Reuse SplitVisitor just like splitQuadrants and bridgeSplitAtEdge.
+        SplitVisitor sv;
+        list<Point3D> new_pts;
+        vector<vector<unsigned int>> split_elements;
+        vector<vector<Point3D>> clipping_coords;
+        vector<Quadrant> processed;
+        map<unsigned int, unsigned int> idx_pos_map;
+        list<pair<unsigned int, unsigned int>> to_balance;
+
+        sv.setPoints(points);
+        sv.setMapEdges(MapEdges);
+        sv.setNewPts(new_pts);
+        sv.setNewEles(split_elements);
+        sv.setClipping(clipping_coords);
+        sv.setProcessedQuadVector(processed);
+        sv.setMapProcessed(idx_pos_map);
+        sv.setToBalanceList(to_balance);
+        sv.setStartIndex(nextQIdx);
+
+        if (!quad.accept(&sv) || split_elements.size() != 4) {
+            return result;
+        }
+
+        // Append SplitVisitor's new MeshPoints (mid-edges + center).
+        if (!new_pts.empty()) {
+            points.reserve(points.size() + new_pts.size());
+            points.insert(points.end(), new_pts.begin(), new_pts.end());
+        }
+
+        // Build the 4 candidate children. We track survivors in
+        // `survivors` and discarded indices in `discardIndices` so we
+        // can later clean up MapEdges for the discarded ones.
+        std::vector<Quadrant> survivors;
+        std::vector<unsigned int> discardIndices;
+        const unsigned int qidBase = nextQIdx;
+        for (unsigned int j = 0; j < split_elements.size(); ++j) {
+            unsigned int childQId = qidBase + j;
+            Quadrant o(split_elements[j],
+                       static_cast<unsigned short>(qrl + 1),
+                       childQId);
+
+            bool keep = false;
+            if (inter_edges.empty()) {
+                keep = true;
+            } else {
+                IntersectionsVisitor iv(true);
+                iv.setPolyline(input);
+                iv.setEdges(inter_edges);
+                iv.setCoords(clipping_coords[j]);
+                if (o.accept(&iv)) {
+                    keep = true;
+                } else if (isItIn(input, inter_edges, clipping_coords[j])) {
+                    keep = true;
+                }
+            }
+
+            if (keep) {
+                survivors.push_back(std::move(o));
+            } else {
+                // AllOutside: clean up its MapEdges entries (set the
+                // side pointers to max so the entry is not orphaned).
+                EdgeVisitor::removeEdges(&o, MapEdges);
+                discardIndices.push_back(j);
+            }
+        }
+
+        if (survivors.empty()) {
+            // All children ended up AllOutside. SplitVisitor already
+            // mutated MapEdges: it stamped info[0] on the 4 original
+            // outer edges with their midpoints, and inserted 8 new
+            // half-edges plus 4 cross-edges pointing at q_ids in
+            // [qidBase, qidBase+3]. Since we are NOT inserting any
+            // Quadrant with those q_ids, we must revert MapEdges so
+            // the BFS of the next iteration does not walk phantom
+            // topology. The discarded-children side pointers have
+            // already been zeroed by EdgeVisitor::removeEdges above.
+            const vector<unsigned int> &pi = quad.getPointIndex();
+            unsigned int mid01 = MapEdges[QuadEdge(pi[0], pi[1])][0];
+            unsigned int mid12 = MapEdges[QuadEdge(pi[1], pi[2])][0];
+            unsigned int mid23 = MapEdges[QuadEdge(pi[2], pi[3])][0];
+            unsigned int mid30 = MapEdges[QuadEdge(pi[3], pi[0])][0];
+            // The center is one corner common to all 4 sub-quads; for
+            // the first child it is the 3rd corner (split_elements[0][2]).
+            const unsigned int center = split_elements[0][2];
+
+            MapEdges[QuadEdge(pi[0], pi[1])][0] = 0;
+            MapEdges[QuadEdge(pi[1], pi[2])][0] = 0;
+            MapEdges[QuadEdge(pi[2], pi[3])][0] = 0;
+            MapEdges[QuadEdge(pi[3], pi[0])][0] = 0;
+
+            MapEdges.erase(QuadEdge(pi[0],  mid01));
+            MapEdges.erase(QuadEdge(mid01,   pi[1]));
+            MapEdges.erase(QuadEdge(pi[1],  mid12));
+            MapEdges.erase(QuadEdge(mid12,   pi[2]));
+            MapEdges.erase(QuadEdge(pi[2],  mid23));
+            MapEdges.erase(QuadEdge(mid23,   pi[3]));
+            MapEdges.erase(QuadEdge(pi[3],  mid30));
+            MapEdges.erase(QuadEdge(mid30,   pi[0]));
+
+            MapEdges.erase(QuadEdge(mid01,  center));
+            MapEdges.erase(QuadEdge(mid12,  center));
+            MapEdges.erase(QuadEdge(mid23,  center));
+            MapEdges.erase(QuadEdge(mid30,  center));
+
+            nextQIdx = qidBase;
+            return result;
+        }
+
+        // Bump nextQIdx past all 4 children regardless of survival
+        // (q_ids were assigned at construction; keeping them ensures
+        // no q_id reuse, even for discarded AllOutside children).
+        nextQIdx = qidBase + 4;
+
+        // Replace Quadrants[qi] with the first survivor and push the
+        // rest at the end of the vector.
+        Quadrants[qi] = std::move(survivors[0]);
+        for (unsigned int k = 1; k < survivors.size(); ++k) {
+            Quadrants.push_back(std::move(survivors[k]));
+        }
+
+        // Classify WindingState for each survivor (Unknown is the
+        // Quadrant constructor default; without classification,
+        // isInteriorCell would return false and the new sub-quads
+        // would be discarded by the final drop filter).
+        auto classifyFromWindingNumbers = [](Quadrant &q) {
+            const auto &wns = q.getWindingNumbers();
+            bool anyPos = false, anyZero = false;
+            for (double wn : wns) {
+                if (wn > 0.0) anyPos = true;
+                else anyZero = true;
+            }
+            if (anyPos && !anyZero)
+                q.setWindingState(WindingState::AllInside);
+            else if (!anyPos && anyZero)
+                q.setWindingState(WindingState::AllOutside);
+            else
+                q.setWindingState(WindingState::Mixed);
+        };
+
+        WindingNumberVisitor wnv(sampleSize);
+        wnv.setPolyline(&input);
+        wnv.setPoints(&points);
+        // Re-visit Quadrants[qi] (which now holds the first survivor)
+        // and the appended survivors at the end of the vector.
+        Quadrants[qi].accept(&wnv);
+        classifyFromWindingNumbers(Quadrants[qi]);
+        const unsigned int startIdx =
+            Quadrants.size() - survivors.size() + 1;
+        for (unsigned int k = startIdx; k < Quadrants.size(); ++k) {
+            Quadrants[k].accept(&wnv);
+            classifyFromWindingNumbers(Quadrants[k]);
+        }
+
+        // Collect the survivors as currently stored in Quadrants for
+        // the caller (so the caller has stable copies).
+        std::vector<Quadrant> returned;
+        returned.reserve(survivors.size());
+        returned.push_back(Quadrants[qi]);
+        for (unsigned int k = startIdx; k < Quadrants.size(); ++k) {
+            returned.push_back(Quadrants[k]);
+        }
+        return returned;
+    }
+
+    //--------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------------
+
+    // Heurística para el error de cuadrícula gruesa de TUSQH. Si el quadtree comienza
+    // con `coarseThreshold` o menos celdas raíz y la polilínea tiene
+    // al menos `minSegmentsForTrigger` segmentos, el criterio de bobinado de TUSQH
+    // puede submuestrear las celdas iniciales gigantes (ej. con el valor por
+    // defecto -N 2 = 4 muestras por celda, una celda de 50x50 se clasifica como
+    // TodoAdentro o TodoAfuera y nunca se subdivide). Se pre-refina
+    // uniformemente hasta el nivel `baseLevel` usando la función heredada `generateQuadtreeMesh`
+    // para que TUSQH tenga suficientes celdas pequeñas y sus cálculos sean significativos.
+    //
+    // El pre-refinamiento está limitado: solo se activa cuando la cuadrícula
+    // inicial es muy gruesa (por defecto: <= 2 celdas), la polilínea es
+    // lo suficientemente compleja (por defecto: >= 100 segmentos; esto excluye casos
+    // de regresión simples como unit_square.poly donde TUSQH produce
+    // legítimamente una sola celda), y respeta la profundidad máxima solicitada `maxDepth`
+    // (limitada a baseLevel, para que el bucle de TUSQH todavía tenga margen para
+    // subdividir más si es necesario).
     bool Mesher::preRefineForTusqh(Polyline &input,
                                    unsigned int maxDepth,
                                    list<RefinementRegion *> &all_reg,

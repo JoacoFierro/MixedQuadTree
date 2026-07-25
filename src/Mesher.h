@@ -128,13 +128,29 @@ namespace Clobscode
                                           const bool &debugging=false,
                                           unsigned int new_q_idx=0,bool Aliasing=false);
 
-        // TUSQH subdivision loop. Subdivides each quadrant while its s x s
-        // sample-point winding numbers are ambiguous (i.e. some samples are
-        // inside and some outside the Polyline). Max depth is bounded by
-        // `maxDepth`.
-        // Optional legacy mode: when refineOnEdgeIntersect is true the
-        // cell is also refined whenever it geometrically intersects the
-        // input Polyline, regardless of the winding criterion.
+        // Bucle de subdivisión TUSQH. Subdivide cada cuadrante mientras sus
+        // winding numbers sobre una grilla s × s sean ambiguos (i.e.
+        // algunas muestras están adentro y otras afuera de la polilínea).
+        //
+        // `maxDepth` representa el qrl (nivel de refinamiento) MÁXIMO
+        // ABSOLUTO que deben alcanzar los hijos, NO el número de
+        // iteraciones del bucle. Internamente la función calcula
+        //     startDepth = max(qrl) sobre los cuadrantes de entrada
+        //     effectiveMaxDepth = max(0, maxDepth - startDepth)
+        // y ejecuta `effectiveMaxDepth` iteraciones. Esto garantiza
+        // que ningún hijo exceda `maxDepth`, comportamiento esencial
+        // cuando:
+        //   - la grilla ya fue pre-refinada (e.g. preRefineForTusqh
+        //     lleva la grilla inicial a baseLevel antes de TUSQH),
+        //   - estamos refinando un .oct con qrl > 0 (caso refineMesh
+        //     con useTusqh).
+        // En el caso simple (candidatos inician en qrl = 0), el
+        // comportamiento es idéntico al original: `effectiveMaxDepth`
+        // == `maxDepth` y los hijos llegan a qrl = maxDepth.
+        //
+        // Modo legacy opcional: cuando refineOnEdgeIntersect es true,
+        // la celda también se subdivide si intersecta geométricamente
+        // la polilínea, independientemente del criterio de winding.
         virtual void windingSubdivide(Polyline &input, unsigned int maxDepth,
                                       unsigned int tusqhSampleSize,
                                       bool refineOnEdgeIntersect,
@@ -256,6 +272,28 @@ namespace Clobscode
             unsigned int sampleSize,
             unsigned int &nextQIdx,
             bool doManifoldSplit);
+
+        // JIT balancing helper: 1-to-4 split on Quadrants[qi] with full
+        // bookkeeping (MapEdges rebuild via EdgeVisitor::removeEdges for
+        // the old quad + SplitVisitor for the new ones, IntersectionsVisitor
+        // to discard AllOutside children, isItIn fallback, and
+        // WindingNumberVisitor + WindingState classification).
+        //
+        // On success replaces Quadrants[qi] with the first sub-quad and
+        // pushes the remaining 3 sub-quads at the end of Quadrants.
+        // Updates MapEdges for the new sub-quads and appends any new
+        // MeshPoints created by SplitVisitor to `points`. nextQIdx is
+        // bumped past the assigned q_ids.
+        //
+        // Returns an empty vector if the quad should NOT be split (e.g.
+        // not interior). The caller must process quadsToRefine in
+        // DECREASING index order so that push_back does not invalidate
+        // subsequent indices in the batch.
+        virtual std::vector<Quadrant> balanceSplitQuad(
+            Polyline &input,
+            unsigned int qi,
+            unsigned int sampleSize,
+            unsigned int &nextQIdx);
 
         // TUSQH §3.4 helper: returns the unit outward direction from the
         // bridge edge of quad `q` (i.e. the direction in which a bridge
