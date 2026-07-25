@@ -97,7 +97,7 @@ namespace Clobscode
             preRefineForTusqh(input, rl, all_reg, name, debugging, Aliasing);
             windingSubdivide(input, rl, tusqhSampleSize,
                              refineOnEdgeIntersect, name, debugging,
-                             tusqhExtraResolveDepth,Aliasing);
+                             tusqhExtraResolveDepth);
         } else {
             splitQuadrants(rl,input,roctli,all_reg,name,minrl,omaxrl,debugging);
         }
@@ -115,7 +115,7 @@ namespace Clobscode
             resolveArchipelagos(input, subgridSampleSize,
                                 subgridJoinThreshold,
                                 subgridMinComponentCells,
-                                name);
+                                name,Aliasing);
         }
 
         //Save the Octant mesh for further refinement.
@@ -329,7 +329,7 @@ namespace Clobscode
             resolveArchipelagos(input, subgridSampleSize,
                                 subgridJoinThreshold,
                                 subgridMinComponentCells,
-                                name);
+                                name,Aliasing);
         }
 
         Services::WriteQuadtreeMesh(name,points,Quadrants,MapEdges,gt);
@@ -1841,7 +1841,7 @@ namespace Clobscode
                                   unsigned int tusqhExtraResolveDepth,bool Aliasing)
     {
         auto start_time = chrono::high_resolution_clock::now();
-
+        
         // The list of candidate quadrants to refine and the temporary
         // list of new candidates created at the current iteration.
         list<Quadrant> candidates, new_candidates;
@@ -2436,26 +2436,7 @@ namespace Clobscode
                 Quadrants = std::move(kept_non_mixed);
             }
         }
-        //------------ Desarollo Joaquin Fierro ---------------------
-        if (Aliasing == true){  
-            list<Quadrant> tmp_Quadrants ;
-            tmp_Quadrants.assign(make_move_iterator(Quadrants.begin()),make_move_iterator(Quadrants.end()));
 
-            cout << "Se ha activado el uso de templates \n"<< endl;
-            QuadAliasing qa;
-            qa.setQuadrant(tmp_Quadrants);
-            qa.setPoints(points);
-            qa.setActualIndex(new_q_idx);
-            qa.getPinches();
-            qa.savePinches("pinches.txt");
-            qa.CreateTemplates();
-
-            std::shared_ptr<FEMesh> templates_octree=make_shared<FEMesh>();
-            saveOutputMesh(templates_octree,points,tmp_Quadrants);
-            string tmp_name = name + "_templates";
-            Services::WriteVTK(tmp_name,templates_octree);
-        } 
-        //------------ Fin desarrollo -------------------------
         auto end_time = chrono::high_resolution_clock::now();
         cout << "    * windingSubdivide (TUSQH) in "
              << std::chrono::duration_cast<chrono::milliseconds>(end_time-start_time).count()
@@ -3562,7 +3543,7 @@ namespace Clobscode
                                       unsigned int sampleSize,
                                       double joinThreshold,
                                       unsigned int minComponentCells,
-                                      const string& name)
+                                      const string& name,bool Aliasing)
     {
         auto start_time = chrono::high_resolution_clock::now();
 
@@ -4193,6 +4174,30 @@ vector<bool> keepQuad(Quadrants.size(), false);
              << ") in "
              << std::chrono::duration_cast<chrono::milliseconds>(end_time-start_time).count()
              << " ms" << endl;
+
+        //------------ Desarollo Joaquin Fierro ---------------------
+        if (Aliasing == true){  
+            list<Quadrant> tmp_Quadrants ;
+            tmp_Quadrants.assign(make_move_iterator(Quadrants.begin()),make_move_iterator(Quadrants.end()));
+
+            cout << "Se ha activado el uso de templates \n"<< endl;
+            QuadAliasing qa;
+            qa.setQuadrant(tmp_Quadrants);
+            qa.setPoints(points);
+            qa.setActualIndex(tmp_Quadrants.size());
+            cout<< "Detectando Pinches" << endl;
+            qa.getPinches();
+            cout<< "Generando Pinches" << endl;
+            qa.CreateTemplates();
+
+            std::shared_ptr<FEMesh> templates_octree=make_shared<FEMesh>();
+            saveOutputMesh(templates_octree,points,tmp_Quadrants);
+            string tmp_name = name + "_templatesPinches";
+            Services::WriteVTK(tmp_name,templates_octree);
+        } 
+        //------------ Fin desarrollo -------------------------
+
+        
     }
 
     //--------------------------------------------------------------------------------

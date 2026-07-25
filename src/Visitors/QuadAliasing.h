@@ -31,9 +31,12 @@
 #include <vector>
 #include <list>
 #include <map>
+#include <cmath>
+#include <math.h>
 #include "../Quadrant.h"
 #include "../MeshPoint.h"
 #include "../QuadEdge.h"
+#include "../Polyline.h"
 #include <string>
 
 
@@ -46,7 +49,7 @@ using std::list;
 using std::set;
 using std::pair;
 
- struct VertexAlias{
+struct VertexAlias{
 
     unsigned int sharedVertex;
     const Quadrant *q1;
@@ -54,13 +57,6 @@ using std::pair;
 
     std::array<QuadEdge,2> q1_edges;
     std::array<QuadEdge,2> q2_edges;
-};
-
-struct Template {
-    unsigned int sharedVertex;
-    unsigned int OppositeVetex;
-    unsigned int PointOut;
-    unsigned int PointIn;
 };
 
 namespace Clobscode
@@ -72,7 +68,9 @@ namespace Clobscode
 
             virtual void setPoints (vector<MeshPoint> &Meshpoints);
 
-            virtual void setActualIndex(unsigned int &idx);
+            virtual void setActualIndex(unsigned int idx);
+
+            virtual void setInput(const Polyline &ply);
 
             virtual void printQuadrants();
 
@@ -88,7 +86,7 @@ namespace Clobscode
 
             virtual bool edgeHasNeighbour(const QuadEdge &e);
 
-            virtual void QuadrantMap();
+            virtual void QuadrantVertexMap();
 
             virtual void CreateTemplates();
 
@@ -98,13 +96,17 @@ namespace Clobscode
 
             virtual bool ComparePoints (const Point3D &p1, const Point3D &p2);
 
+            bool validAngularConfiguration(unsigned int shared,unsigned int A,unsigned int B, unsigned int C,unsigned int D);
+
         protected:
             list<Quadrant> *Quadrants;
             vector<MeshPoint> *points;
+            const Polyline *ply;
             std::map<QuadEdge, std::vector<const Quadrant*>> mapQuadrant;
+            std::map<unsigned int, std::vector<const Quadrant*>> mapVertexQuadrants;
             vector<VertexAlias> Pinches;
-            vector<Template> Templates;
-            unsigned int *CurrentQuadIndex;
+
+            unsigned int CurrentQuadIndex;
     };
 }
 

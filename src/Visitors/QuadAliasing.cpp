@@ -24,51 +24,52 @@
   
     void QuadAliasing::setQuadrant( list<Quadrant> &quadrants){
         this->Quadrants = &quadrants;
-
     }
 
     void QuadAliasing::setPoints( vector<MeshPoint> &Meshpoints){
         this->points = &Meshpoints;
     }
 
-    void QuadAliasing::setActualIndex(unsigned int &idx){
-        this->CurrentQuadIndex = &idx;
+    void QuadAliasing::setInput(const Polyline &ply){
+        this->ply = &ply;
+    }
+
+    void QuadAliasing::setActualIndex(unsigned int idx){
+        this->CurrentQuadIndex = idx;
     }
     
-    void QuadAliasing::QuadrantMap(){
+    void QuadAliasing::QuadrantVertexMap(){
         mapQuadrant.clear();
+        mapVertexQuadrants.clear();
 
         for (const Quadrant &q : *Quadrants) {
 
             const auto &p = q.getPointIndex();
 
-            for (size_t i=0;i<4;i++) {
+            for (unsigned int i=0;i< p.size();i++) {
                 QuadEdge e(p[i], p[(i+1)%4]);
                 mapQuadrant[e].push_back(&q);
+                mapVertexQuadrants[p[i]].push_back(&q);
             }
         }
     }
 
-
-
     void QuadAliasing::getAdjacentEdges(const Quadrant &q, unsigned int vertex, QuadEdge &e1, QuadEdge &e2){
-
+        
         const auto &pts = q.getPointIndex();
 
         for (unsigned int i = 0; i < pts.size(); i++) {
 
             if (pts[i] != vertex)
                 continue;
-
+   
             unsigned int prev = (i + 3) % 4;
             unsigned int next = (i + 1) % 4;
 
             e1 = QuadEdge(pts[prev], pts[i]);
             e2 = QuadEdge(pts[i], pts[next]);
-
             return;
         }
-        throw std::runtime_error("Shared vertex not found.");
     }
 
     bool  QuadAliasing::edgeHasNeighbour(const QuadEdge &e){
@@ -85,13 +86,17 @@
     }
     
     bool QuadAliasing::ComparePoints(const Point3D &p1,const Point3D &p2){
-            if (p1.X() == p2.X() && p1.Y() == p2.Y() && p1.Z() == p2.Z() )
-                return true;
-        return false;
+        constexpr double eps = 1e-6;
+
+        return std::abs(p1.X() - p2.X()) < eps &&
+            std::abs(p1.Y() - p2.Y()) < eps &&
+            std::abs(p1.Z() - p2.Z()) < eps;
 
     }
+
+
     void QuadAliasing::createTemplate(const VertexAlias &pinch){
-        std::cout << "--FLAG 3----" << endl;
+        
         unsigned int A = oppositeVertex(pinch.q1_edges[0],pinch.sharedVertex);
         unsigned int B = oppositeVertex(pinch.q1_edges[1],pinch.sharedVertex);
         unsigned int C = oppositeVertex(pinch.q2_edges[0],pinch.sharedVertex);
@@ -141,14 +146,10 @@
         for(unsigned int id : ids1){
             center1 = center1 + (*points)[id].getPoint();
         }
-        std::cout << "FLAG 3.7" << endl;
-        std::cout << "ID Cuadrante 2: " << const_cast<Clobscode::Quadrant*>(pinch.q2)->getIndex() <<endl;
         for(unsigned int id : ids2){
-            std::cout << "FLAG 3.7.2.1" << endl;
-            std::cout << id <<endl;
             center2 = center2 + (*points)[id].getPoint();
         }
-        std::cout << "FLAG 3.8" << endl;
+
         center1 = center1 * 0.25;
         center2 = center2 * 0.25;
         
@@ -200,55 +201,154 @@
         Point3D Ci = PO + bevelCIn*width;
         Point3D Di = PO + bevelDIn*width;
 
-        //--------------------------Implementar descarte de templates si es que existen
-
-
-        //------------------------ Im
-
-        unsigned int idAout=points->size();
-        points->push_back(MeshPoint(Aout));
-
-        unsigned int idBout=points->size();
-        points->push_back(MeshPoint(Bout));
-
-        unsigned int idCout=points->size();
-        points->push_back(MeshPoint(Cout));
-
-        unsigned int idDout=points->size();
-        points->push_back(MeshPoint(Dout));
-
-
         Point3D CommonPointA = ComparePoints(Ai,Ci) ? Ci : Di;
         Point3D CommonPointB = ComparePoints(Ai,Ci) ? Di : Ci;
         
-        unsigned int idCommonA=points->size();
-        points->push_back(MeshPoint(CommonPointA));
+        bool InsertA = true, InsertB = true,InsertC = true , InsertD = true;
+        bool InsertAinVector = true, InsertBinVector = true,InsertCinVector = true, InsertDinVector = true, 
+                                                            InsertCommonAV = true,InsertCommonBV = true; 
+        bool InsertCommonA = true , InsertCommonB = true;
 
-        unsigned int idCommonB=points->size();
-        points->push_back(MeshPoint(CommonPointB));
+        unsigned int idAout,idBout,idCout,idDout;
+        unsigned int idCommonA = 0;
+        unsigned int idCommonB = 0;
 
+        for (unsigned int i = 0; i < points->size(); ++i) {
+            const Point3D &p = (*points)[i].getPoint();
+            if (ComparePoints(Aout,p)){
+                idAout = i;
+                InsertAinVector = false;
+            }
+            if (ComparePoints(Bout,p)){
+                idBout = i;
+                InsertBinVector = false;
+            }
+            if (ComparePoints(Cout,p)){
+                idCout = i;
+                InsertCinVector = false;
+            }
+            if (ComparePoints(Dout,p)){
+                idDout = i;
+                InsertDinVector = false;
+            }
+            if (ComparePoints(CommonPointA,p)){
+                idCommonA = i;
+                InsertCommonAV = false;
+            }
+            if (ComparePoints(CommonPointB,p)){
+                idCommonB = i;
+                InsertCommonBV = false;
+            }
+        }
+        vector<unsigned int> indices,indA,indB,indC,indD;
 
-        vector<unsigned int> QuadA = {pinch.sharedVertex,A,idAout,idCommonA};
-        vector<unsigned int> QuadB = {pinch.sharedVertex,B,idBout,idCommonB};
-        vector<unsigned int> QuadC = {pinch.sharedVertex,C,idCout, ComparePoints(Ai,Ci) ? idCommonA: idCommonB };
-        vector<unsigned int> QuadD = {pinch.sharedVertex,D,idDout, ComparePoints(Ai,Ci) ? idCommonB: idCommonA };
+        for (const Quadrant &q : *Quadrants) {
+            if (q.getIsTemplate()){
+   
+                vector<unsigned int> indices =q.getPointIndex();
+                indA = {pinch.sharedVertex,A,idAout,idCommonA};
+                indB = {pinch.sharedVertex,B,idBout,idCommonB};
+                indC = {pinch.sharedVertex,C,idCout, ComparePoints(Ai,Ci) ? idCommonA: idCommonB};
+                indD = {pinch.sharedVertex,D,idDout, ComparePoints(Ai,Ci) ? idCommonB: idCommonA};
 
-        unsigned short ref_level1 = pinch.q1->getRefinementLevel();
-        unsigned short ref_level2 = pinch.q2->getRefinementLevel();
+                std::sort(indices.begin(),indices.end());
+                std::sort(indA.begin(),indA.end());
+                std::sort(indB.begin(),indB.end());
+                std::sort(indC.begin(),indC.end());
+                std::sort(indD.begin(),indD.end());
 
-        Quadrant qa (QuadA, ref_level1, (*CurrentQuadIndex)++);
-        Quadrants->push_back(qa);
+                if(indices == indA)InsertA = false;
+                if(indices == indB)InsertB = false;
+                if(indices == indC)InsertC = false;
+                if(indices == indD)InsertD = false;
 
-        Quadrant qb (QuadB, ref_level1, (*CurrentQuadIndex)++);
-        Quadrants->push_back(qb);
+                if (!InsertA  && !(ComparePoints(Ai,Ci) ? InsertC: InsertD))InsertCommonA = false;
+                if (!InsertB  && !(ComparePoints(Ai,Ci) ? InsertD: InsertC))InsertCommonB = false;
 
-        Quadrant qc (QuadC, ref_level2, (*CurrentQuadIndex)++);
-        Quadrants->push_back(qc);
+                continue;
+            }
+            if (q.pointInside(*points, Aout)) {
+                InsertA = false;
+            }
+            if (q.pointInside(*points, Bout)) {
+                InsertB = false;
+            }
+            if (q.pointInside(*points, Cout)) {
+                InsertC = false;
+            }
+            if (q.pointInside(*points, Dout)) {
+                InsertD = false;
+            }
+            if (q.pointInside(*points, CommonPointA)) {
+                InsertCommonA = false;
+            }
+            if (q.pointInside(*points, CommonPointB)) {
+                InsertCommonB = false;
+            }
+        }
 
-        Quadrant qd (QuadD, ref_level2, (*CurrentQuadIndex)++);
-        Quadrants->push_back(qd);
-        std::cout << "=================================" << endl;
-    }   
+        if(InsertCommonAV && InsertCommonA){
+            idCommonA=points->size();
+            points->push_back(MeshPoint(CommonPointA));
+        }
+        if(InsertCommonBV && InsertCommonB){
+           idCommonB=points->size();
+           points->push_back(MeshPoint(CommonPointB));
+        }
+        if(InsertAinVector && InsertA){
+            idAout=points->size();
+            points->push_back(MeshPoint(Aout));
+        }
+        if(InsertBinVector && InsertB){
+            idBout=points->size();
+            points->push_back(MeshPoint(Bout));
+        }
+        if(InsertCinVector && InsertC){
+            idCout=points->size();
+            points->push_back(MeshPoint(Cout));
+        }
+        if(InsertDinVector && InsertD){
+            idDout=points->size();
+            points->push_back(MeshPoint(Dout));
+        }
+
+        unsigned short ref_level1 = 0;
+        unsigned short ref_level2 = 0;
+
+        if(InsertA || InsertB){
+            ref_level1 = pinch.q1->getRefinementLevel();
+        }
+        if(InsertC || InsertD){
+            ref_level2 = pinch.q2->getRefinementLevel();
+        }
+
+        if(InsertA && InsertCommonA){
+            vector<unsigned int> QuadA = {pinch.sharedVertex,A,idAout,idCommonA};
+            Quadrant qa (QuadA, ref_level1, CurrentQuadIndex++);
+            qa.setIsTemplate(true);
+            Quadrants->push_back(qa);
+        }
+        if(InsertB && InsertCommonB){
+            vector<unsigned int> QuadB = {pinch.sharedVertex,B,idBout,idCommonB};
+            Quadrant qb (QuadB, ref_level1, CurrentQuadIndex++);
+            qb.setIsTemplate(true);
+            Quadrants->push_back(qb);
+            
+        }
+        if(InsertC && (ComparePoints(Ai,Ci) ? InsertCommonA: InsertCommonB)){
+            vector<unsigned int> QuadC = {pinch.sharedVertex,C,idCout, ComparePoints(Ai,Ci) ? idCommonA: idCommonB };
+            Quadrant qc (QuadC, ref_level2, CurrentQuadIndex++);
+            qc.setIsTemplate(true);
+            Quadrants->push_back(qc);
+        }
+        if(InsertD && (ComparePoints(Ai,Ci) ? InsertCommonB: InsertCommonA)){
+            vector<unsigned int> QuadD = {pinch.sharedVertex,D,idDout, ComparePoints(Ai,Ci) ? idCommonB: idCommonA };
+            Quadrant qd (QuadD, ref_level2, CurrentQuadIndex++);
+            qd.setIsTemplate(true);
+            Quadrants->push_back(qd);
+        }
+
+}   
 
     void QuadAliasing::CreateTemplates(){
         for(VertexAlias pinch: Pinches){
@@ -257,48 +357,94 @@
     }
     
     void QuadAliasing::getPinches(){
-        QuadrantMap();
-        list<Quadrant>::iterator iter1;
-        list<Quadrant>::iterator iter2;
-        for (iter1 = Quadrants->begin(); iter1 != Quadrants->end(); ++iter1){
-            
-            auto iter2 = iter1;
-            ++iter2;
+        QuadrantVertexMap();
+        cout<<"Pinches Encontrados: "<< mapVertexQuadrants.size() <<endl;
+        for (auto &entry : mapVertexQuadrants){
+        
+            unsigned int sharedVertex = entry.first;
+            auto &incident = entry.second;
 
-            for (; iter2 != Quadrants->end(); ++iter2){
-                int common = 0;
-                unsigned int sharedVertex;
+            if (incident.size() != 2)
+                continue;
+        
+            const Quadrant *q1 = incident[0];
+            const Quadrant *q2 = incident[1];
+            QuadEdge q1e1,q1e2;
+            QuadEdge q2e1,q2e2;
 
-                for (unsigned int a : iter1->getPointIndex()){
-                    for (unsigned int b : iter2->getPointIndex()){
-                        if (a == b){
-                            common++;
-                            sharedVertex = a;
-                        }
-                    }
-                }
-                if(common == 1){
-                    QuadEdge e1,e2;
-                    getAdjacentEdges(*iter1, sharedVertex,e1,e2);
+            getAdjacentEdges(*q1,sharedVertex,q1e1,q1e2);
+            getAdjacentEdges(*q2,sharedVertex,q2e1,q2e2);
 
-                    bool flag1 = edgeHasNeighbour(e1);
-                    bool flag2 = edgeHasNeighbour(e2);
-                    if (flag1 || flag2){
-                        continue;
-                    }
-                    VertexAlias Pinch;
-                    Pinch.sharedVertex = sharedVertex;
-                    Pinch.q1 = &(*iter1);
-                    Pinch.q2 = &(*iter2);
-                    Pinch.q1_edges = {e1,e2};
-                    getAdjacentEdges(*iter2, sharedVertex, Pinch.q2_edges[0], Pinch.q2_edges[1]);
-                    Pinches.push_back(Pinch);
-                }
-                else{
-                    continue;
-                }
-            }
+            if(edgeHasNeighbour(q1e1)) continue;
+            if(edgeHasNeighbour(q1e2)) continue;
+            if(edgeHasNeighbour(q2e1)) continue;
+            if(edgeHasNeighbour(q2e2)) continue;
+
+            unsigned int A = oppositeVertex(q1e1,sharedVertex);
+            unsigned int B = oppositeVertex(q1e2,sharedVertex);
+            unsigned int C = oppositeVertex(q2e1,sharedVertex);
+            unsigned int D = oppositeVertex(q2e2,sharedVertex);
+
+            if(!validAngularConfiguration(sharedVertex,A,B,C,D))
+                continue;
+
+            VertexAlias pinch;
+            pinch.sharedVertex=sharedVertex;
+            pinch.q1=q1;
+            pinch.q2=q2;
+            pinch.q1_edges={q1e1,q1e2};
+            pinch.q2_edges={q2e1,q2e2};
+            Pinches.push_back(pinch);
         }
+    }
+
+    bool QuadAliasing::validAngularConfiguration(
+            unsigned int shared,
+            unsigned int A,
+            unsigned int B,
+            unsigned int C,
+            unsigned int D)
+    {
+        const Point3D &O = (*points)[shared].getPoint();
+
+        std::vector<double> ang;
+        ang.reserve(4);
+
+        unsigned int ids[4] = {A,B,C,D};
+
+        for (unsigned int id : ids) {
+
+            Point3D v = (*points)[id].getPoint() - O;
+
+            double a = atan2(v.Y(), v.X());
+
+            if (a < 0.0)
+                a += 2.0*M_PI;
+
+            ang.push_back(a);
+        }
+
+        std::sort(ang.begin(), ang.end());
+
+        double maxGap = 0.0;
+
+        for (int i=0;i<4;i++) {
+
+            double next = ang[(i+1)%4];
+
+            if (i==3)
+                next += 2.0*M_PI;
+
+            double gap = next - ang[i];
+
+            if (gap > maxGap)
+                maxGap = gap;
+        }
+
+        // Si existe un hueco muy grande,
+        // los cuatro vecinos NO rodean al vértice.
+
+        return maxGap < M_PI;      // 180°
     }
 
     void QuadAliasing::printPinches(){
@@ -344,48 +490,69 @@
             return;
         }
 
-        file << "========== PINCHES DETECTADOS ==========\n";
+        file << "========== PINCHES CON DISTINTO NIVEL DE REFINAMIENTO ==========\n";
 
         int idx = 0;
 
         for (const VertexAlias &pinche : Pinches) {
 
+            unsigned short level1 = pinche.q1->getRefinementLevel();
+            unsigned short level2 = pinche.q2->getRefinementLevel();
+
+            // Solo guardar los casos donde los niveles son distintos
+            if (level1 == level2)
+                continue;
+
             file << "\nPinch " << idx++ << "\n";
-            file << "----------------------------------------\n";
+            file << "--------------------------------------------------\n";
 
-            file << "Shared vertex: "
-                << pinche.sharedVertex << "\n";
+            file << "Shared vertex: " << pinche.sharedVertex << "\n\n";
 
-            file << "Quadrant 1: ";
+            file << "Quadrant 1\n";
+            file << "  Index: " << const_cast<Clobscode::Quadrant*>(pinche.q1)->getIndex() << "\n";
+            file << "  Refinement level: " << level1 << "\n";
+            file << "  Vertices: ";
             for (unsigned int p : pinche.q1->getPointIndex())
                 file << p << " ";
             file << "\n";
 
-            file << "Quadrant 2: ";
+            file << "  Adjacent edges:\n";
+            file << "    " << pinche.q1_edges[0] << "\n";
+            file << "    " << pinche.q1_edges[1] << "\n\n";
+
+            file << "Quadrant 2\n";
+            file << "  Index: " << const_cast<Clobscode::Quadrant*>(pinche.q2)->getIndex() << "\n";
+            file << "  Refinement level: " << level2 << "\n";
+            file << "  Vertices: ";
             for (unsigned int p : pinche.q2->getPointIndex())
                 file << p << " ";
             file << "\n";
 
-            file << "Index Quadrant 2: ";
-            file << const_cast<Clobscode::Quadrant*>(pinche.q2)->getIndex() << "\n";
-
-            file << "Adjacent edges of Q1:\n";
-            file << "    " << pinche.q1_edges[0] << "\n";
-            file << "    " << pinche.q1_edges[1] << "\n";
-
-            file << "Adjacent edges of Q2:\n";
+            file << "  Adjacent edges:\n";
             file << "    " << pinche.q2_edges[0] << "\n";
             file << "    " << pinche.q2_edges[1] << "\n";
+
+            file << "--------------------------------------------------\n";
+            unsigned int A = oppositeVertex(pinche.q1_edges[0], pinche.sharedVertex);
+            unsigned int B = oppositeVertex(pinche.q1_edges[1], pinche.sharedVertex);
+            unsigned int C = oppositeVertex(pinche.q2_edges[0], pinche.sharedVertex);
+            unsigned int D = oppositeVertex(pinche.q2_edges[1], pinche.sharedVertex);
+
+            file << "Opposite vertices:\n";
+            file << "  A = " << A << "\n";
+            file << "  B = " << B << "\n";
+            file << "  C = " << C << "\n";
+            file << "  D = " << D << "\n";
         }
 
-        file << "\nTotal pinches: " << Pinches.size() << "\n";
-        file << "========================================\n";
+        file << "\nTotal pinches escritos: " << idx << "\n";
+        file << "==================================================\n";
 
         file.close();
 
         std::cout << "Pinches guardados en: "
                 << filename << std::endl;
-    }
+    }   
 
 
     void QuadAliasing::printPoints(){

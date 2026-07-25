@@ -220,7 +220,7 @@ namespace Clobscode
                                          unsigned int sampleSize,
                                          double joinThreshold,
                                          unsigned int minComponentCells,
-                                         const string& name);
+                                         const string& name,bool Aliasing= false);
 
         // TUSQH §3.4 step 3 helper: perform a 1-to-5 split on a quad
         // `q` whose edge at index `bridgeEdgeIdx` (0..3) is the bridge

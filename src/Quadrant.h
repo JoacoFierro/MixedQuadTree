@@ -185,6 +185,16 @@ namespace Clobscode
         virtual double getAngle(unsigned int &nIdx, const vector<MeshPoint> &mp) const;
         /***** END Debugging methods *******/
 
+
+        virtual void setIsTemplate(bool ist);
+
+        virtual bool getIsTemplate() const;
+
+        virtual void setTemplateEdge(const QuadEdge &e);
+
+        virtual QuadEdge getTemplateEdge() const;
+
+
     protected:
         
 		//protected:
@@ -198,6 +208,10 @@ namespace Clobscode
         
         //the quad unique identifier
         unsigned int q_id;
+
+        //Is template
+		bool IsTemplate = false;
+        QuadEdge templateEdge;
 		
         //inregion is set to true when this quadrant, and therfore their childs,
         //intersects a RefinementRegion, allowing to avoid asking again.
@@ -425,6 +439,23 @@ namespace Clobscode
         return mOrigin;
     }
     /***** END Quadrant provenance inline methods *******/
+
+    inline void Quadrant::setIsTemplate(bool ist){
+        IsTemplate = ist;
+    }
+    inline bool Quadrant::getIsTemplate() const{
+        return IsTemplate;
+    }
+
+    inline void Quadrant::setTemplateEdge(const QuadEdge &e){
+        templateEdge = e;
+    }
+
+    inline QuadEdge Quadrant::getTemplateEdge() const {
+        return templateEdge;
+    }
+
+    
 
     std::ostream& operator<<(ostream& o, const Quadrant &q);
 }
