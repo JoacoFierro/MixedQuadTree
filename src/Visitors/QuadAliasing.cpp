@@ -34,8 +34,8 @@
         this->ply = &ply;
     }
 
-    void QuadAliasing::setActualIndex(unsigned int idx){
-        this->CurrentQuadIndex = idx;
+    void QuadAliasing::setActualIndex(unsigned int &idx){
+        this->CurrentQuadIndex = &idx;
     }
     
     void QuadAliasing::QuadrantVertexMap(){
@@ -324,26 +324,26 @@
 
         if(InsertA && InsertCommonA){
             vector<unsigned int> QuadA = {pinch.sharedVertex,A,idAout,idCommonA};
-            Quadrant qa (QuadA, ref_level1, CurrentQuadIndex++);
+            Quadrant qa (QuadA, ref_level1, (*CurrentQuadIndex)++);
             qa.setIsTemplate(true);
             Quadrants->push_back(qa);
         }
         if(InsertB && InsertCommonB){
             vector<unsigned int> QuadB = {pinch.sharedVertex,B,idBout,idCommonB};
-            Quadrant qb (QuadB, ref_level1, CurrentQuadIndex++);
+            Quadrant qb (QuadB, ref_level1, (*CurrentQuadIndex)++);
             qb.setIsTemplate(true);
             Quadrants->push_back(qb);
             
         }
         if(InsertC && (ComparePoints(Ai,Ci) ? InsertCommonA: InsertCommonB)){
             vector<unsigned int> QuadC = {pinch.sharedVertex,C,idCout, ComparePoints(Ai,Ci) ? idCommonA: idCommonB };
-            Quadrant qc (QuadC, ref_level2, CurrentQuadIndex++);
+            Quadrant qc (QuadC, ref_level2, (*CurrentQuadIndex)++);
             qc.setIsTemplate(true);
             Quadrants->push_back(qc);
         }
         if(InsertD && (ComparePoints(Ai,Ci) ? InsertCommonB: InsertCommonA)){
             vector<unsigned int> QuadD = {pinch.sharedVertex,D,idDout, ComparePoints(Ai,Ci) ? idCommonB: idCommonA };
-            Quadrant qd (QuadD, ref_level2, CurrentQuadIndex++);
+            Quadrant qd (QuadD, ref_level2, (*CurrentQuadIndex)++);
             qd.setIsTemplate(true);
             Quadrants->push_back(qd);
         }

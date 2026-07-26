@@ -4179,12 +4179,12 @@ vector<bool> keepQuad(Quadrants.size(), false);
         if (Aliasing == true){  
             list<Quadrant> tmp_Quadrants ;
             tmp_Quadrants.assign(make_move_iterator(Quadrants.begin()),make_move_iterator(Quadrants.end()));
-
+            unsigned int new_q_idx = tmp_Quadrants.size();
             cout << "Se ha activado el uso de templates \n"<< endl;
             QuadAliasing qa;
             qa.setQuadrant(tmp_Quadrants);
             qa.setPoints(points);
-            qa.setActualIndex(tmp_Quadrants.size());
+            qa.setActualIndex(new_q_idx);
             cout<< "Detectando Pinches" << endl;
             qa.getPinches();
             cout<< "Generando Pinches" << endl;

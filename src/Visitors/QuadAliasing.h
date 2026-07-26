@@ -68,7 +68,7 @@ namespace Clobscode
 
             virtual void setPoints (vector<MeshPoint> &Meshpoints);
 
-            virtual void setActualIndex(unsigned int idx);
+            virtual void setActualIndex(unsigned int &idx);
 
             virtual void setInput(const Polyline &ply);
 
@@ -106,7 +106,7 @@ namespace Clobscode
             std::map<unsigned int, std::vector<const Quadrant*>> mapVertexQuadrants;
             vector<VertexAlias> Pinches;
 
-            unsigned int CurrentQuadIndex;
+            unsigned int *CurrentQuadIndex;
     };
 }
 
