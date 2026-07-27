@@ -183,8 +183,7 @@ namespace Clobscode
         virtual bool isDebugging() const;
         
         virtual double getAngle(unsigned int &nIdx, const vector<MeshPoint> &mp) const;
-        /***** END Debugging methods *******/
-
+/***** END Debugging methods *******/
 
         virtual void setIsTemplate(bool ist);
 
@@ -193,7 +192,6 @@ namespace Clobscode
         virtual void setTemplateEdge(const QuadEdge &e);
 
         virtual QuadEdge getTemplateEdge() const;
-
 
     protected:
         
@@ -212,7 +210,7 @@ namespace Clobscode
         //Is template
 		bool IsTemplate = false;
         QuadEdge templateEdge;
-		
+
         //inregion is set to true when this quadrant, and therfore their childs,
         //intersects a RefinementRegion, allowing to avoid asking again.
         bool surface;//, inregion;
@@ -454,8 +452,6 @@ namespace Clobscode
     inline QuadEdge Quadrant::getTemplateEdge() const {
         return templateEdge;
     }
-
-    
 
     std::ostream& operator<<(ostream& o, const Quadrant &q);
 }

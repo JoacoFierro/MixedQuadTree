@@ -31,6 +31,7 @@ set(SOURCE_FILES Main
         Visitors/PinchVisitor
 	Visualization/VolumeFractionVTKWriter
         PinchDetector
+        Visitors/Archipielago
         Visitors/QuadAliasing
 	#For debuggin
         Visitors/OneIrregularVisitor

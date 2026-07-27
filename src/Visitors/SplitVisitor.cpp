@@ -92,15 +92,14 @@ namespace Clobscode
         }
 
         const Point3D &min = points->at(pi[0]).getPoint();
-        const Point3D &max = points->at(pi[2]).getPoint();
-        const Point3D avg = (max-min)/2 + min;
-        
-        unsigned int son_rl = o->getRefinementLevel() + 1;
 
+        const Point3D &max = points->at(pi[2]).getPoint();
+
+        const Point3D avg = (max-min)/2 + min;
+        unsigned int son_rl = o->getRefinementLevel() + 1;
         //inserting node 4 between nodes 0 and 1
         unsigned int nq_idx;
         if (splitEdge(all_pts[0],all_pts[1],idx,idx+1,1,n_pts,nq_idx,all_pts[4])) {
-            
             //save the new mid_edge index
             all_pts[4] = n_pts;
             //create the Edges with parent neighbor
@@ -123,7 +122,6 @@ namespace Clobscode
                 }
             }
         }
-        
         //inserting node 5 between nodes 1 and 2
         if (splitEdge(all_pts[1],all_pts[2],idx+1,idx+2,1,n_pts,nq_idx,all_pts[5])) {
             //save the new mid_edge index

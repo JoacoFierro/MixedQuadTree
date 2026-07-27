@@ -115,7 +115,7 @@ namespace Clobscode
             resolveArchipelagos(input, subgridSampleSize,
                                 subgridJoinThreshold,
                                 subgridMinComponentCells,
-                                name,Aliasing);
+                                name, omaxrl, Aliasing);
         }
 
         //Save the Octant mesh for further refinement.
@@ -246,6 +246,7 @@ namespace Clobscode
 
         //generate root Quadrants
         generateGridMesh(input);
+        refineBackgroundGrid(rl,input,BackQuadrants.size(),all_reg);
 
 #if (VTKOUT==true)         //CL Debbuging
         {
@@ -329,7 +330,7 @@ namespace Clobscode
             resolveArchipelagos(input, subgridSampleSize,
                                 subgridJoinThreshold,
                                 subgridMinComponentCells,
-                                name,Aliasing);
+                                name, rl, Aliasing);
         }
 
         Services::WriteQuadtreeMesh(name,points,Quadrants,MapEdges,gt);
@@ -473,9 +474,11 @@ namespace Clobscode
         GridMesher gm;
         gm.generatePoints(input.getBounds(),all_x,all_y);
         gm.generateMesh(all_x,all_y,points,elements);
-        
+        // ------ Modificado por Joaquin Fierro ------------
+        gm.generateMesh(all_x,all_y,BackPoints,elements);
+        //---------- Fin modificacion ---------
         Quadrants.reserve(elements.size());
-        
+        BackQuadrants.reserve(elements.size()); //Cambios hechos por Joaquin
         //create the root Quadrants
         for (unsigned int i=0; i<elements.size(); i++) {
             Quadrant o (elements[i], 0, i);
@@ -490,7 +493,9 @@ namespace Clobscode
             iv.setPoints(points);
             if (o.accept(&iv)) {
                 EdgeVisitor::insertEdges(&o,MapEdges);
+                EdgeVisitor::insertEdges(&o,BackMapEdges); //Cambios hechos por Joaquin
                 Quadrants.push_back(o);
+                BackQuadrants.push_back(o); //Cambios hechos por Joaquin
             }
         }
         
@@ -1552,7 +1557,7 @@ namespace Clobscode
                                         vector<MeshPoint> &tmp_points,
                                         list<Quadrant> &tmp_Quadrants,
                                         const bool &debugging,
-                                        const list<Point3D> &extra_pts) {
+                                        const list<Point3D> &extra_pts,bool UseBackgroundGrid) {
         
         auto start_time = chrono::high_resolution_clock::now();
         
@@ -1560,15 +1565,19 @@ namespace Clobscode
         list<vector<unsigned int> > tmp_elements;
         vector<vector<unsigned int> > out_els;
         vector<unsigned short> deb_els;
-        
         if (debugging) {
             deb_els.reserve(tmp_Quadrants.size());
         }
-        
         unsigned int n = tmp_points.size();
+
         out_pts.reserve(n + extra_pts.size());
         for (unsigned int i=0; i<n; i++) {
-            out_pts.push_back(points[i].getPoint());
+            if(UseBackgroundGrid){
+                out_pts.push_back(BackPoints[i].getPoint());
+            }
+            else{
+                out_pts.push_back(points[i].getPoint());
+            }
         }
         
         //copy tmp points if available
@@ -1578,13 +1587,19 @@ namespace Clobscode
         
         OneIrregularVisitor oiv;
         if (debugging) {
-            oiv.setEdges(MapEdges);
+            if(UseBackgroundGrid){
+                oiv.setEdges(BackMapEdges);
+            }
+            else{
+                oiv.setEdges(MapEdges);
+            }
         }
         
         list<Quadrant>::iterator o_iter;
         
         bool errors = false;
         if (debugging) {
+            
             for (o_iter=tmp_Quadrants.begin(); o_iter!=tmp_Quadrants.end(); ++o_iter) {
                 
                 vector<vector<unsigned int> > sub_els= o_iter->getSubElements();
@@ -1611,6 +1626,7 @@ namespace Clobscode
             }
         }
         else {
+            
             for (o_iter=tmp_Quadrants.begin(); o_iter!=tmp_Quadrants.end(); ++o_iter) {
                 
                 vector<vector<unsigned int> > sub_els= o_iter->getSubElements();
@@ -1619,7 +1635,7 @@ namespace Clobscode
                 }
             }
         }
-        
+         
         out_els.reserve(tmp_elements.size());
         list<vector<unsigned int> >::const_iterator e_iter;
         
@@ -1634,7 +1650,8 @@ namespace Clobscode
         cout << "    * SaveOutputMesh in "
         << std::chrono::duration_cast<chrono::milliseconds>(end_time-start_time).count();
         cout << " ms"<< endl;
-        
+
+        cout << "Out_els: " << out_els.size() << endl;
         return out_els.size();
     }
     //--------------------------------------------------------------------------------
@@ -2436,7 +2453,6 @@ namespace Clobscode
                 Quadrants = std::move(kept_non_mixed);
             }
         }
-
         auto end_time = chrono::high_resolution_clock::now();
         cout << "    * windingSubdivide (TUSQH) in "
              << std::chrono::duration_cast<chrono::milliseconds>(end_time-start_time).count()
@@ -2478,7 +2494,7 @@ namespace Clobscode
 
         auto end_time = chrono::high_resolution_clock::now();
         cout << "    * computeVolumeFractions (s=" << sampleSize << ") in "
-             << std::chrono::duration_cast<chrono::milliseconds>(end_time-start_time).count();
+             << std::chrono::duration_cast<chrono::milliseconds>(end_time-start_time).count();  
         cout << " ms" << endl;
     }
 
@@ -3543,7 +3559,9 @@ namespace Clobscode
                                       unsigned int sampleSize,
                                       double joinThreshold,
                                       unsigned int minComponentCells,
-                                      const string& name,bool Aliasing)
+                                      const string& name,
+                                      unsigned int maxDepth,
+                                      bool Aliasing)
     {
         auto start_time = chrono::high_resolution_clock::now();
 
@@ -4176,9 +4194,11 @@ vector<bool> keepQuad(Quadrants.size(), false);
              << " ms" << endl;
 
         //------------ Desarollo Joaquin Fierro ---------------------
-        if (Aliasing == true){  
-            list<Quadrant> tmp_Quadrants ;
+        if (Aliasing == true){
+            list<Quadrant> tmp_Quadrants, tmp_BackQuadrants ;
             tmp_Quadrants.assign(make_move_iterator(Quadrants.begin()),make_move_iterator(Quadrants.end()));
+            tmp_BackQuadrants.assign(make_move_iterator(BackQuadrants.begin()),make_move_iterator(BackQuadrants.end()));
+
             unsigned int new_q_idx = tmp_Quadrants.size();
             cout << "Se ha activado el uso de templates \n"<< endl;
             QuadAliasing qa;
@@ -4194,11 +4214,27 @@ vector<bool> keepQuad(Quadrants.size(), false);
             saveOutputMesh(templates_octree,points,tmp_Quadrants);
             string tmp_name = name + "_templatesPinches";
             Services::WriteVTK(tmp_name,templates_octree);
-        } 
+
+            Archipielago ar;
+            ar.setQuadrant(tmp_Quadrants,tmp_BackQuadrants);
+            ar.setPoints(points,BackPoints);
+            ar.setMapEdges(MapEdges,BackMapEdges);
+            ar.setActualIndex(new_q_idx);
+            ar.setInput(input);
+            cout<< "Generando Archipielagos" << endl;
+            ar.getOutsideEdges(maxDepth);
+            cout<< "Arreglando templates" << endl;
+            ar.fixTemplates(maxDepth);
+
+            templates_octree=make_shared<FEMesh>();
+            saveOutputMesh(templates_octree,points,tmp_Quadrants);
+            tmp_name = name + "_templatesArchipielago";
+            Services::WriteVTK(tmp_name,templates_octree);
+        }
         //------------ Fin desarrollo -------------------------
 
-        
-    }
+}
+
 
     //--------------------------------------------------------------------------------
     //--------------------------------------------------------------------------------
@@ -4474,5 +4510,157 @@ vector<bool> keepQuad(Quadrants.size(), false);
              << Quadrants.size() << " cells before TUSQH subdivision\n";
 
         return true;
+    }
+
+    void Mesher::refineBackgroundGrid(const unsigned short &rl, Polyline &input,unsigned int new_q_idx,const list<RefinementRegion *> &all_reg){
+        
+        list<Quadrant> candidates, new_candidates, clean_processed,refined;
+        vector<Quadrant> processed;
+        map<unsigned int, unsigned int> idx_pos_map;
+        list<Point3D> new_pts;
+        list<pair<unsigned int,unsigned int> > toBalance;
+        
+        candidates.assign(make_move_iterator(BackQuadrants.begin()),
+                          make_move_iterator(BackQuadrants.end()));
+                          
+        BackQuadrants.clear();
+        
+        list<RefinementRegion *>::const_iterator reg_iter;
+        SplitVisitor sv;
+        sv.setPoints(BackPoints);
+        sv.setMapEdges(BackMapEdges);
+        sv.setNewPts(new_pts);
+        sv.setProcessedQuadVector(processed);
+        sv.setMapProcessed(idx_pos_map); 
+        sv.setToBalanceList(toBalance);
+        
+        for (unsigned short i=0; i<rl; i++) {
+            new_pts.clear();
+
+            for (auto quad: candidates) {
+                unsigned short qrl = quad.getRefinementLevel();
+                vector<vector<Point3D> > clipping_coords;
+                vector<vector<unsigned int> > split_elements;
+                sv.setClipping(clipping_coords);
+                sv.setNewEles(split_elements);
+                sv.setStartIndex(new_q_idx);
+
+                quad.accept(&sv);
+
+                for (unsigned int j=0; j<split_elements.size(); j++) {
+                    Quadrant o (split_elements[j],qrl+1,new_q_idx++);
+                    new_candidates.push_back(o);
+                }
+            }
+            std::swap(candidates,new_candidates);
+
+            if (new_pts.empty()) {
+                cerr << "warning at Mesher::generateQuadtreeMesh no new points!!!\n";
+                break;
+            }
+
+            BackPoints.reserve(BackPoints.size() + new_pts.size());
+            BackPoints.insert(BackPoints.end(),new_pts.begin(),new_pts.end());
+        }
+        
+        for (auto used_quad: idx_pos_map) {
+            clean_processed.push_back(processed[used_quad.second]);
+        }
+        //save space erasing processed quads.
+        processed.erase(processed.begin(),processed.end());
+
+        vector<MeshPoint> AuxPoints;
+        
+        bool getDistance = true;
+        double distance = 0;
+        for(Quadrant q: candidates){
+            if (q.getRefinementLevel() == rl){
+                refined.push_back(q);
+                if(getDistance){
+                    getDistance = false;
+                    vector<unsigned int> qpts = q.getPointIndex();
+                    Point3D p0 = (BackPoints)[qpts[0]].getPoint();
+                    Point3D p1 = (BackPoints)[qpts[1]].getPoint();
+                    distance = p0.distance(p1);
+                }
+            }else {
+                EdgeVisitor::removeEdges(&q, BackMapEdges);
+                vector<unsigned int> qpts = q.getPointIndex();
+                BackMapEdges.erase(QuadEdge (qpts[0], qpts[1]));
+                BackMapEdges.erase(QuadEdge (qpts[1], qpts[2]));
+                BackMapEdges.erase(QuadEdge (qpts[2], qpts[3]));
+                BackMapEdges.erase(QuadEdge (qpts[3], qpts[0]));
+
+            }
+        }
+        double eps = 1e-8;
+        for (auto it = BackMapEdges.begin(); it != BackMapEdges.end(); ) {
+
+            const QuadEdge &edge = it->first;
+
+            Point3D p0 = BackPoints[edge[0]].getPoint();
+            Point3D p1 = BackPoints[edge[1]].getPoint();
+
+            if (std::abs(p0.distance(p1) - distance) > eps) {
+                it = BackMapEdges.erase(it);
+            }
+            else {
+                ++it;
+            }
+        }
+
+        std::vector<bool> used(BackPoints.size(), false);
+        for (const Quadrant &q : refined) {
+            for (unsigned int idx : q.getPointIndex()) {
+                used[idx] = true;
+            }
+        }
+
+        std::vector<unsigned int> oldToNew(BackPoints.size(),std::numeric_limits<unsigned int>::max());
+
+        std::vector<MeshPoint> newPoints;
+
+        for (unsigned int i = 0; i < BackPoints.size(); ++i) {
+            if (used[i]) {
+                oldToNew[i] = newPoints.size();
+                newPoints.push_back(BackPoints[i]);
+            }
+        }
+
+        list<Quadrant> tmp_Quadrants;
+        for (Quadrant &q : refined) {
+
+            std::vector<unsigned int> ids = q.getPointIndex();
+
+            for (unsigned int &id : ids)
+                id = oldToNew[id];
+
+            Quadrant o (ids,rl,tmp_Quadrants.size());
+            tmp_Quadrants.push_back(o);
+        }
+
+        std::map<QuadEdge, EdgeInfo> newMap;
+
+        for (const auto &entry : BackMapEdges) {
+
+            unsigned int p0 = oldToNew[ entry.first[0] ];
+            unsigned int p1 = oldToNew[ entry.first[1] ];
+
+            if (p0 == std::numeric_limits<unsigned int>::max()) continue;
+            if (p1 == std::numeric_limits<unsigned int>::max()) continue;
+
+            newMap.emplace(
+                QuadEdge(p0, p1),
+                entry.second
+            );
+        }
+        BackPoints.swap(newPoints);
+        BackMapEdges.swap(newMap);
+        BackQuadrants.insert(BackQuadrants.end(),make_move_iterator(tmp_Quadrants.begin()),make_move_iterator(tmp_Quadrants.end()));
+
+        std::shared_ptr<FEMesh> background_grid=make_shared<FEMesh>();
+        saveOutputMesh(background_grid,BackPoints,tmp_Quadrants,false,{},true);
+        string tmp_name = "BackgroundGrid";
+        Services::WriteVTK(tmp_name,background_grid);
     }
 }

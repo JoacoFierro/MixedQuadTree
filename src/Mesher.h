@@ -50,6 +50,7 @@
 #include "SubcellVFData.h"
 // ----- Modificado por Joaquin Fierro --------------
 #include "Visitors/QuadAliasing.h"
+#include "Visitors/Archipielago.h"
 // ----- Fin modificacion ---------------------------
 
 #include <list>
@@ -220,7 +221,9 @@ namespace Clobscode
                                          unsigned int sampleSize,
                                          double joinThreshold,
                                          unsigned int minComponentCells,
-                                         const string& name,bool Aliasing= false);
+                                         const string& name,
+                                         unsigned int maxDepth,
+                                         bool Aliasing= false);
 
         // TUSQH §3.4 step 3 helper: perform a 1-to-5 split on a quad
         // `q` whose edge at index `bridgeEdgeIdx` (0..3) is the bridge
@@ -368,7 +371,7 @@ namespace Clobscode
                                             vector<MeshPoint> &points,
                                             list<Quadrant> &elements,
                                             const bool &debugging=false,
-                                            const list<Point3D> &extra_pts=list<Point3D> ());
+                                            const list<Point3D> &extra_pts=list<Point3D> (),bool UseBackgroundGrid=false);
         
         virtual unsigned int saveOutputMesh(const shared_ptr<FEMesh> &mesh,
                                             vector<MeshPoint> &points,
@@ -379,15 +382,20 @@ namespace Clobscode
 
         virtual void projectCloseToBoundaryNodes(Polyline &input);
 
+        virtual void refineBackgroundGrid(const unsigned short &rl, Polyline &input,unsigned int new_q_idx,const list<RefinementRegion *> &all_reg);
 
-		
+
 	protected:
-		
+
 		vector<MeshPoint> points;
 		vector<Quadrant> Quadrants;
-        //Map that for each edge saves its mid point index (0 by default).
         map<QuadEdge, EdgeInfo> MapEdges;
 		list<RefinementRegion *> regions;
+
+        vector<MeshPoint> BackPoints;
+        vector<Quadrant> BackQuadrants;
+        map<QuadEdge, EdgeInfo> BackMapEdges;
+        list<RefinementRegion *> BackRegions;
 
         unsigned int mSampleSize;
 
