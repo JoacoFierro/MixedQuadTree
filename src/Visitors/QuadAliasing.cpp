@@ -322,27 +322,93 @@
             ref_level2 = pinch.q2->getRefinementLevel();
         }
 
+        //Obtener orden antihorario de los tempaltes
+        vector<unsigned int> QuadA,QuadB,QuadC,QuadD, config1,config2;
+        
+        config1 = {pinch.sharedVertex,idCommonA,idAout,A};
+        config2 = {pinch.sharedVertex,A,idAout,idCommonA};
+        if(abs(PA.Y() - PO.Y()) < 1E-8){
+            if(PA.X() < PO.X()){
+                QuadA = nOA.Y() > 0 ? config1 : config2;
+            } else{
+                QuadA = nOA.Y() > 0 ? config2 : config1;
+            }
+        }else{
+            if(PA.Y() < PO.Y()){
+                QuadA = nOA.Y() > 0 ? config2 : config1;
+            } else{
+                QuadA = nOA.Y() > 0 ? config1 : config2;
+            }
+        }   
+        //-------------------------------------
+        config1 = {pinch.sharedVertex,idCommonB,idBout,B};
+        config2 = {pinch.sharedVertex,B,idBout,idCommonB};
+        if(abs(PB.Y() - PO.Y()) < 1E-8){
+            if(PB.X() < PO.X()){
+                QuadB = nOB.Y() > 0 ? config1 : config2;
+            } else{
+                QuadB = nOB.Y() > 0 ? config2 : config1;
+            }
+            
+        }else{
+            if(PB.Y() < PO.Y()){
+                QuadB = nOB.Y() > 0 ? config2 : config1;
+            } else{
+                QuadB = nOB.Y() > 0 ? config1: config2;
+            }
+        } 
+        //-------------------------------------
+        config1 =  {pinch.sharedVertex,(ComparePoints(Ai,Ci) ? idCommonA: idCommonB),idCout,C};
+        config2 =  {pinch.sharedVertex,C,idCout, (ComparePoints(Ai,Ci) ? idCommonA: idCommonB)};
+        if(abs(PC.Y() - PO.Y()) < 1E-8){
+            if(PC.X() < PO.X()){
+                QuadC = nOC.Y() > 0 ? config1 : config2;
+            } else{
+                QuadC = nOC.Y() > 0 ?  config2 : config1;
+            }
+            
+        }else{
+            if(PC.Y() < PO.Y()){
+                QuadC = nOC.Y() > 0 ? config2 : config1;
+            } else{
+                QuadC = nOC.Y() > 0 ? config1 :config2;
+            }
+        }   
+        //-------------------------------------
+        config1 =  {pinch.sharedVertex,(ComparePoints(Ai,Ci) ? idCommonB: idCommonA),idDout,D};
+        config2 =  {pinch.sharedVertex,D,idDout, (ComparePoints(Ai,Ci) ? idCommonB: idCommonA) };
+        if(abs(PD.Y() - PO.Y()) < 1E-8){
+            if(PD.X() < PO.X()){
+                QuadD = nOD.Y() > 0 ? config1: config2;
+            } else{
+                QuadD = nOD.Y() > 0 ? config2 : config1;
+            }
+            
+        }else{
+            if(PD.Y() < PO.Y()){
+                QuadD = nOD.Y() > 0 ? config2 :config1 ;
+            } else{
+                QuadD = nOD.Y() > 0 ? config1 : config2;
+            }
+        } 
+        //---------------------------------
         if(InsertA && InsertCommonA){
-            vector<unsigned int> QuadA = {pinch.sharedVertex,A,idAout,idCommonA};
             Quadrant qa (QuadA, ref_level1, (*CurrentQuadIndex)++);
             qa.setIsTemplate(true);
             Quadrants->push_back(qa);
         }
         if(InsertB && InsertCommonB){
-            vector<unsigned int> QuadB = {pinch.sharedVertex,B,idBout,idCommonB};
             Quadrant qb (QuadB, ref_level1, (*CurrentQuadIndex)++);
             qb.setIsTemplate(true);
             Quadrants->push_back(qb);
             
         }
         if(InsertC && (ComparePoints(Ai,Ci) ? InsertCommonA: InsertCommonB)){
-            vector<unsigned int> QuadC = {pinch.sharedVertex,C,idCout, ComparePoints(Ai,Ci) ? idCommonA: idCommonB };
             Quadrant qc (QuadC, ref_level2, (*CurrentQuadIndex)++);
             qc.setIsTemplate(true);
             Quadrants->push_back(qc);
         }
         if(InsertD && (ComparePoints(Ai,Ci) ? InsertCommonB: InsertCommonA)){
-            vector<unsigned int> QuadD = {pinch.sharedVertex,D,idDout, ComparePoints(Ai,Ci) ? idCommonB: idCommonA };
             Quadrant qd (QuadD, ref_level2, (*CurrentQuadIndex)++);
             qd.setIsTemplate(true);
             Quadrants->push_back(qd);

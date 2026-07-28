@@ -52,8 +52,8 @@ using std::pair;
 
 struct TemplateInfo{
     QuadEdge edge;
-    const Quadrant* quad1;
-    const Quadrant* quad2;
+    const Quadrant* quad1 = nullptr;
+    const Quadrant* quad2 = nullptr;
 };
 
 struct FixWithQuad{
@@ -105,6 +105,8 @@ namespace Clobscode
             virtual QuadEdge SelectEdge(QuadEdge Tedge,QuadEdge Qedge1,QuadEdge Qedge2,unsigned int shared);
 
             virtual unsigned int getIndexWithSharedVertex(Quadrant q,unsigned int shared,QuadEdge edge);
+
+            virtual bool pointInsideTemplate(const Quadrant &q,const Point3D &P) const;
 
     
         protected:

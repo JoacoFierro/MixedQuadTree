@@ -184,26 +184,17 @@
 
         //Determinanmos la correspondencia entre puntos
 
-        Point3D d1 = p1a - S;
-        Point3D d2 = p2a - S;
+        double da = I.distance(p1a);
+        double db = I.distance(p1b);
 
-        d1.normalize();
-        d2.normalize();
-
-        Point3D vI = I - S;
-        Point3D vD = D - S;
-
-        double sI = vI*d1 + vI*d2;
-        double sD = vD*d1 + vD*d2;
-
-        if(sI > sD? insertPointI :insertPointD ){
-            vector<unsigned int> QuadA = { (sI > sD ? idI : idD) ,  Id1a, sharedPoint, (confAA ? Id2a: Id2b)}; 
+        if(da < db ? insertPointI :insertPointD ){
+            vector<unsigned int> QuadA = { (da < db ? idI : idD) ,  Id1a, sharedPoint, (confAA ? Id2a: Id2b)}; 
             Quadrant q1 (QuadA,maxDepth, (*CurrentQuadIndex)++);
             q1.setIsTemplate(true);
             Quadrants->push_back(q1);
         }
-        if(sI > sD? insertPointD :insertPointI ){
-            vector<unsigned int> QuadB = { (sI > sD ? idD : idI),  (confAA ? Id2b: Id2a), sharedPoint, Id1b }; 
+        if(da < db ? insertPointD :insertPointI ){
+            vector<unsigned int> QuadB = { (da < db ?idD : idI),  (confAA ? Id2b: Id2a), sharedPoint, Id1b }; 
             Quadrant q2 (QuadB,maxDepth, (*CurrentQuadIndex)++);
             q2.setIsTemplate(true);
             Quadrants->push_back(q2);
@@ -259,22 +250,57 @@
             if (!insertPointA && !insertPointC)
                 break;
         }
+        bool insertT = true;
+        Point3D midt = (A + C) * 0.5;
 
-        if(insertPointA){
-            idA=points->size();
-            points->push_back(MeshPoint(A));
-        }
-        if(insertPointC){
-            idC=points->size();
-            points->push_back(MeshPoint(C));
+        double delta = (p1 - p0).Norm() * 0.05; 
+        Point3D exterior = (p0 + p1) * 0.5 + n * delta;
+
+        for (const Quadrant &q: *Quadrants){
+            if(q.getIsTemplate()){
+
+                if(pointInsideTemplate(q,exterior))insertT= false;
+            }
         }
 
-        vector<unsigned int> QuadAC = {idp0,idA,idC,idp1};
-        Quadrant q1 (QuadAC,maxDepth, (*CurrentQuadIndex)++);
-        q1.setIsTemplate(true);
-        QuadEdge e1(idp0,idp1);
-        q1.setTemplateEdge(e1);
-        Quadrants->push_back(q1);
+        for (auto templateEdge:  TemplesAdded){
+            const Quadrant* quad1 = templateEdge.quad1;
+            const Quadrant* quad2 = templateEdge.quad2;
+            QuadEdge e = templateEdge.edge;
+            Point3D p1 = (*points)[e[0]].getPoint();
+            Point3D p2 = (*points)[e[1]].getPoint();
+
+            // if (quad2->pointInside(*points, midt) || quad2->pointInside(*points, midt)) insertT = false;
+            
+            if (abs(p1.X() - p2.X()) < 1E-8){
+                if(abs(p1.X() - midt.X()) < 1E-8){
+                    if (midt.Y() > min(p1.Y(),p2.Y()) && midt.Y() < max(p1.Y(),p2.Y())) insertT = false;
+                }
+            } else{
+                if(abs(p1.Y() - midt.Y()) < 1E-8){
+                    if (midt.X() > min(p1.X(),p2.X()) && midt.X() < max(p1.X(),p2.X()))insertT = false;
+                }
+            }
+        }
+        
+        if(insertT){
+
+            if(insertPointA){
+                idA=points->size();
+                points->push_back(MeshPoint(A));
+            }
+            if(insertPointC){
+                idC=points->size();
+                points->push_back(MeshPoint(C));
+            }
+            
+            vector<unsigned int> QuadAC = {idp0,idA,idC,idp1};
+            Quadrant q1 (QuadAC,maxDepth, (*CurrentQuadIndex)++);
+            q1.setIsTemplate(true);
+            QuadEdge e1(idp0,idp1);
+            q1.setTemplateEdge(e1);
+            Quadrants->push_back(q1);
+        }
 
     }
 
@@ -325,11 +351,11 @@
         Point3D bevel0a, bevel0b, bevel1a, bevel1b;
         Point3D A,B,C,D;
 
-        bevel0a = dir + n;
-        bevel1a = -dir + n;
+        bevel0a = dir + n; //A
+        bevel1a = -dir + n; // B
 
-        bevel0b = dir - n;
-        bevel1b = -dir - n;
+        bevel0b = dir - n; // C 
+        bevel1b = -dir - n; // D
 
         bevel0a.normalize();
         bevel1a.normalize();
@@ -343,42 +369,61 @@
         B = p0 + bevel0b*width;
         D = p1 + bevel1b*width;
 
-        //Fist Quadrant
-        unsigned int idA=points->size();
-        points->push_back(MeshPoint(A));
-        unsigned int idC=points->size();
-        points->push_back(MeshPoint(C));
+        bool InsertA = true, InsertB = true, InsertC = true, InsertD = true;
 
-        vector<unsigned int> QuadAC = {idp0,idA,idC,idp1};
-        Quadrant q1 (QuadAC,maxDepth, (*CurrentQuadIndex)++);
-        q1.setIsTemplate(true);
+        for (const Quadrant &q : *Quadrants) {
+            // if (q.getIsTemplate()){
+                if (q.pointInside(*points,A)){
+                    InsertA = false;
+                }
+                if (q.pointInside(*points,A)) {
+                    InsertB = false;
+                }
+                if (q.pointInside(*points,C)) {
+                    InsertC = false;
+                }
+                if (q.pointInside(*points,D)) {
+                    InsertD = false;
+                }
+            // }
+        }
 
-        QuadEdge e1(idp0,idp1);
-        q1.setTemplateEdge(e1);
-        
-        Quadrants->push_back(q1);
-        Quadrant *ptrQ1 = &Quadrants->back();
+        if ((InsertA && InsertC) && (InsertB && InsertD)){
+            TemplateInfo ti;
+            QuadEdge e1(idp0,idp1);
+            ti.edge = e1;
+            //Fist Quadrant
+            unsigned int idA=points->size();
+            points->push_back(MeshPoint(A));
+            unsigned int idC=points->size();
+            points->push_back(MeshPoint(C));
 
-        //Second Quadrant
-        unsigned int idB=points->size();
-        points->push_back(MeshPoint(B));
-        unsigned int idD=points->size();
-        points->push_back(MeshPoint(D));
-        
-        vector<unsigned int> QuadBD = {idp0,idB,idD,idp1};
-        Quadrant q2 (QuadBD, maxDepth, (*CurrentQuadIndex)++);
-        q2.setIsTemplate(true);
-        q2.setTemplateEdge(e1);
+            vector<unsigned int> QuadAC = {idp0,idA,idC,idp1};
+            Quadrant q1 (QuadAC,maxDepth, (*CurrentQuadIndex)++);
+            q1.setIsTemplate(true);
+            
+            Quadrants->push_back(q1);
+            Quadrant *ptrQ1 = &Quadrants->back();
+            ti.quad1 = ptrQ1;
+  
 
-        Quadrants->push_back(q2);
-        Quadrant *ptrQ2 = &Quadrants->back();
+            //Second Quadrant
+            unsigned int idB=points->size();
+            points->push_back(MeshPoint(B));
+            unsigned int idD=points->size();
+            points->push_back(MeshPoint(D));
+            
+            vector<unsigned int> QuadBD = {idp0,idB,idD,idp1};
+            Quadrant q2 (QuadBD, maxDepth, (*CurrentQuadIndex)++);
+            q2.setIsTemplate(true);
+            q2.setTemplateEdge(e1);
 
-        TemplateInfo ti;
-        ti.edge = e1;
-        ti.quad1 = ptrQ1;
-        ti.quad2 = ptrQ2; 
-        TemplesAdded.push_back(ti);
-        
+            Quadrants->push_back(q2);
+            Quadrant *ptrQ2 = &Quadrants->back();
+            ti.quad2 = ptrQ2; 
+
+            TemplesAdded.push_back(ti);
+        }
     }
 
 
@@ -419,6 +464,33 @@
 
             if(createTemplate)createTemplates(edge, maxDepth);
         }
+    }
+
+bool Archipielago::pointInsideTemplate(const Quadrant &q, const Point3D &P) const {
+
+        const auto &idx = q.getPointIndex();
+
+        double minX = std::numeric_limits<double>::max();
+        double maxX = std::numeric_limits<double>::lowest();
+        double minY = std::numeric_limits<double>::max();
+        double maxY = std::numeric_limits<double>::lowest();
+
+        for (unsigned int i = 0; i < 4; ++i) {
+            const Point3D &p = (*points)[idx[i]].getPoint();
+
+            if (p.X() < minX) minX = p.X();
+            if (p.X() > maxX) maxX = p.X();
+
+            if (p.Y() < minY) minY = p.Y();
+            if (p.Y() > maxY) maxY = p.Y();
+        }
+
+        if (P.X() > minX && P.X() < maxX &&
+            P.Y() > minY && P.Y() < maxY) {
+            return true;
+        }
+
+        return false;
     }
 
     QuadEdge Archipielago::SelectEdge(QuadEdge Tedge,QuadEdge Qedge1,QuadEdge Qedge2,unsigned int shared){
@@ -487,22 +559,31 @@
         QuadEdge Tedge1, Tedge2;
         QuadEdge Edge1a,Edge1b,Edge2a,Edge2b;
         unsigned int p1a,p1b,p2a,p2b;
+
         for(FixWithTemp &ToRepair: ToFixWithTems){
-            cout << "Iteracion 1" <<endl;
+            // cout << "Iteracion 1" <<endl;
             Tedge1 = ToRepair.Template1.edge;
             Tedge2 = ToRepair.Template2.edge;
             sharedVertex = ToRepair.sharedVertex;
+            // cout << "Iteracion 2" <<endl;
 
-            const Quadrant quad1a = *ToRepair.Template1.quad1;
-            const Quadrant quad1b = *ToRepair.Template1.quad2;
-            const Quadrant quad2a = *ToRepair.Template2.quad1;
-            const Quadrant quad2b = *ToRepair.Template2.quad2;
-            
-            p1a = getIndexWithSharedVertex(quad1a,sharedVertex,Tedge1);
-            p1b = getIndexWithSharedVertex(quad1b,sharedVertex,Tedge1);
-            p2a = getIndexWithSharedVertex(quad2a,sharedVertex,Tedge2);
-            p2b = getIndexWithSharedVertex(quad2b,sharedVertex,Tedge2);
+            if (ToRepair.Template1.quad1) {
+                const Quadrant quad1a = *ToRepair.Template1.quad1;
+                p1a = getIndexWithSharedVertex(quad1a,sharedVertex,Tedge1);
+            }
+            if (ToRepair.Template1.quad2) {
+                const Quadrant quad1b = *ToRepair.Template1.quad2;
+                p1b = getIndexWithSharedVertex(quad1b,sharedVertex,Tedge1);
+            }
+            if (ToRepair.Template2.quad1) {
+                const Quadrant quad2a = *ToRepair.Template2.quad1;
+                p2a = getIndexWithSharedVertex(quad2a,sharedVertex,Tedge2);
+            }
 
+            if (ToRepair.Template2.quad2) {
+                const Quadrant quad2b = *ToRepair.Template2.quad2;
+                p2b = getIndexWithSharedVertex(quad2b,sharedVertex,Tedge2);
+            }
             createFixWithTemp(sharedVertex,p1a,p1b,p2a,p2b,maxDepth);
 
         }
