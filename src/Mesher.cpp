@@ -4193,8 +4193,11 @@ vector<bool> keepQuad(Quadrants.size(), false);
              << std::chrono::duration_cast<chrono::milliseconds>(end_time-start_time).count()
              << " ms" << endl;
 
+             
+
         //------------ Desarollo Joaquin Fierro ---------------------
         if (Aliasing == true){
+            auto start_time_P = chrono::high_resolution_clock::now();
             list<Quadrant> tmp_Quadrants, tmp_BackQuadrants ;
             tmp_Quadrants.assign(make_move_iterator(Quadrants.begin()),make_move_iterator(Quadrants.end()));
             tmp_BackQuadrants.assign(make_move_iterator(BackQuadrants.begin()),make_move_iterator(BackQuadrants.end()));
@@ -4210,11 +4213,20 @@ vector<bool> keepQuad(Quadrants.size(), false);
             cout<< "Generando Pinches" << endl;
             qa.CreateTemplates();
 
+            auto end_time_P = chrono::high_resolution_clock::now();
+
+            cout << "-------Insersion de templates Pinches : " 
+                     << std::chrono::duration_cast<chrono::milliseconds>(end_time_P-start_time_P).count()
+                     << " ms" << endl;
+
+
             std::shared_ptr<FEMesh> templates_octree=make_shared<FEMesh>();
             saveOutputMesh(templates_octree,points,tmp_Quadrants);
             string tmp_name = name + "_templatesPinches";
             Services::WriteVTK(tmp_name,templates_octree);
 
+
+            auto start_time_A = chrono::high_resolution_clock::now();
             Archipielago ar;
             ar.setQuadrant(tmp_Quadrants,tmp_BackQuadrants);
             ar.setPoints(points,BackPoints);
@@ -4225,6 +4237,11 @@ vector<bool> keepQuad(Quadrants.size(), false);
             ar.getOutsideEdges(maxDepth);
             cout<< "Arreglando templates" << endl;
             ar.fixTemplates(maxDepth);
+
+            auto end_time_A = chrono::high_resolution_clock::now();
+            cout << "-------Insersion de templates Archipielagos : " 
+                     << std::chrono::duration_cast<chrono::milliseconds>(end_time_A-start_time_A).count()
+                     << " ms" << endl;
 
             templates_octree=make_shared<FEMesh>();
             saveOutputMesh(templates_octree,points,tmp_Quadrants);

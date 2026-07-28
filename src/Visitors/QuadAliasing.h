@@ -107,6 +107,7 @@ namespace Clobscode
             vector<VertexAlias> Pinches;
 
             unsigned int *CurrentQuadIndex;
+            unsigned int TemplatesInsertados = 0;
     };
 }
 

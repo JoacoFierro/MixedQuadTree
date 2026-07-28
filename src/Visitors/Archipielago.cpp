@@ -50,6 +50,7 @@
     void Archipielago::getTemplatesToFix(){
         bool isTemplate;
         unsigned int sharedVerted, sharedVertex , id0, id1 , T1_opposite, T2_opossite;
+        cout<<"Cantidad de templates archipielagos obtenidos: " << TemplesAdded.size() <<endl;
         for (size_t i = 0; i < TemplesAdded.size(); ++i) {
             const TemplateInfo &T1 = TemplesAdded[i];
             id0 = T1.edge[0];
@@ -192,12 +193,14 @@
             Quadrant q1 (QuadA,maxDepth, (*CurrentQuadIndex)++);
             q1.setIsTemplate(true);
             Quadrants->push_back(q1);
+            TemplatesInsertados++;
         }
         if(da < db ? insertPointD :insertPointI ){
             vector<unsigned int> QuadB = { (da < db ?idD : idI),  (confAA ? Id2b: Id2a), sharedPoint, Id1b }; 
             Quadrant q2 (QuadB,maxDepth, (*CurrentQuadIndex)++);
             q2.setIsTemplate(true);
             Quadrants->push_back(q2);
+            TemplatesInsertados++;
         }
     }
 
@@ -300,6 +303,7 @@
             QuadEdge e1(idp0,idp1);
             q1.setTemplateEdge(e1);
             Quadrants->push_back(q1);
+            TemplatesInsertados++;
         }
 
     }
@@ -405,6 +409,7 @@
             Quadrants->push_back(q1);
             Quadrant *ptrQ1 = &Quadrants->back();
             ti.quad1 = ptrQ1;
+            TemplatesInsertados++;
   
 
             //Second Quadrant
@@ -420,6 +425,7 @@
 
             Quadrants->push_back(q2);
             Quadrant *ptrQ2 = &Quadrants->back();
+            TemplatesInsertados++;
             ti.quad2 = ptrQ2; 
 
             TemplesAdded.push_back(ti);
@@ -587,6 +593,8 @@ bool Archipielago::pointInsideTemplate(const Quadrant &q, const Point3D &P) cons
             createFixWithTemp(sharedVertex,p1a,p1b,p2a,p2b,maxDepth);
 
         }
+
+        cout<< "Templates Archipielagos Insertados: " << TemplatesInsertados << endl;
         ToFixWithQuads.clear();
         ToFixWithTems.clear();
         TemplesAdded.clear();

@@ -396,22 +396,26 @@
             Quadrant qa (QuadA, ref_level1, (*CurrentQuadIndex)++);
             qa.setIsTemplate(true);
             Quadrants->push_back(qa);
+            TemplatesInsertados++;
         }
         if(InsertB && InsertCommonB){
             Quadrant qb (QuadB, ref_level1, (*CurrentQuadIndex)++);
             qb.setIsTemplate(true);
             Quadrants->push_back(qb);
+            TemplatesInsertados++;
             
         }
         if(InsertC && (ComparePoints(Ai,Ci) ? InsertCommonA: InsertCommonB)){
             Quadrant qc (QuadC, ref_level2, (*CurrentQuadIndex)++);
             qc.setIsTemplate(true);
             Quadrants->push_back(qc);
+            TemplatesInsertados++;
         }
         if(InsertD && (ComparePoints(Ai,Ci) ? InsertCommonB: InsertCommonA)){
             Quadrant qd (QuadD, ref_level2, (*CurrentQuadIndex)++);
             qd.setIsTemplate(true);
             Quadrants->push_back(qd);
+            TemplatesInsertados++;
         }
 
 }   
@@ -420,6 +424,7 @@
         for(VertexAlias pinch: Pinches){
             createTemplate(pinch);
         }
+        cout<< "Templates Pinches Insertados: " << TemplatesInsertados << endl; 
     }
     
     void QuadAliasing::getPinches(){

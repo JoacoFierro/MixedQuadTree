@@ -126,6 +126,8 @@ namespace Clobscode
             vector<FixWithTemp> ToFixWithTems;
             vector<TemplateInfo> TemplesAdded;
 
+            unsigned int TemplatesInsertados = 0;
+
     };
 }
 
