@@ -1534,4 +1534,115 @@ bool Services::WriteHistogram(std::string name, const shared_ptr<FEMesh> &output
 
     return true;
 }
+
+//-------------------------------------------------------------------
+//-------------------------------------------------------------------
+// AppendStatsCSV: append a single row to a CSV stats file.  The header
+// is written on first call (when the file does not exist or is empty).
+// `flags` is an ordered list of (key,value) pairs whose values
+// overwrite the empty flag placeholders that RunStats::toRow() emits.
+// The ordering MUST match the flag columns declared by
+// RunStats::columnNames() (see Services.h for the canonical list).
+//
+// Behaviour:
+//   - Path is opened in append mode ("at"); missing file -> created.
+//   - Empty file -> canonical header written first.
+//   - Non-empty file -> the first line is compared against the
+//     canonical header; on mismatch we abort with stderr message
+//     (caller should NOT delete/overwrite; preserving pre-existing
+//     data is the safe choice in benchmarks).
+//
+// CSV escaping: per RFC 4180, values containing comma, quote, CR or LF
+// are wrapped in double quotes and embedded quotes are doubled.
+bool Services::AppendStatsCSV(std::string csv_path,
+                               const RunStats &stats,
+                               const std::vector<std::pair<std::string,std::string>> &flags)
+{
+    // 1) Build the row that RunStats wants to emit.
+    std::vector<std::string> row = stats.toRow();
+
+    // 2) Overwrite the flag placeholders (positions 3..15 in columnNames).
+    //    The RunStats::toRow() layout puts the 13 flag columns
+    //    immediately after (timestamp, in_name, out_name), i.e. at
+    //    indices 3..15.  We map flags in order; any extra flags are
+    //    ignored, missing ones stay empty.
+    const size_t flagStartIdx = 3;
+    const std::vector<std::string> &expectedFlags = {
+        "ref_level", "decoration", "mSampleSize",
+        "useTusqh", "tusqhSampleSize", "refineOnEdgeIntersect", "tusqhExtraResolveDepth",
+        "useSubgrid", "subgridSampleSize", "subgridJoinThreshold", "subgridMinComponentCells",
+        "pinchDetectionMode", "Aliasing"
+    };
+    for (size_t i = 0; i < flags.size() && (flagStartIdx + i) < row.size(); ++i) {
+        row[flagStartIdx + i] = flags[i].second;
+    }
+    (void)expectedFlags;  // currently used only for documentation
+
+    // 3) Read existing header (if any).
+    auto fileExists = [](const std::string &p) -> bool {
+        FILE *f = std::fopen(p.c_str(), "rb");
+        if (!f) return false;
+        std::fclose(f);
+        return true;
+    };
+
+    bool needsHeader = true;
+    if (fileExists(csv_path)) {
+        FILE *f = std::fopen(csv_path.c_str(), "rt");
+        if (f) {
+            char buf[8192];
+            if (std::fgets(buf, sizeof(buf), f)) {
+                std::string firstLine(buf);
+                // Strip trailing newline/CR.
+                while (!firstLine.empty() &&
+                       (firstLine.back() == '\n' || firstLine.back() == '\r')) {
+                    firstLine.pop_back();
+                }
+                const std::vector<std::string> &cols = RunStats::columnNames();
+                std::string expected;
+                for (size_t i = 0; i < cols.size(); ++i) {
+                    if (i) expected.push_back(',');
+                    expected += cols[i];
+                }
+                if (firstLine == expected) {
+                    needsHeader = false;
+                } else {
+                    std::cerr << "AppendStatsCSV: '" << csv_path
+                              << "' has an incompatible header. Aborting.\n"
+                              << "  expected: " << expected << "\n"
+                              << "  found:    " << firstLine << "\n";
+                    std::fclose(f);
+                    return false;
+                }
+            }
+            std::fclose(f);
+        }
+    }
+
+    // 4) Append (and possibly write header first).
+    FILE *out = std::fopen(csv_path.c_str(), "at");
+    if (!out) {
+        std::cerr << "AppendStatsCSV: cannot open '" << csv_path
+                  << "' for append.\n";
+        return false;
+    }
+
+    if (needsHeader) {
+        const std::vector<std::string> &cols = RunStats::columnNames();
+        for (size_t i = 0; i < cols.size(); ++i) {
+            if (i) std::fputc(',', out);
+            std::fputs(cols[i].c_str(), out);
+        }
+        std::fputc('\n', out);
+    }
+
+    for (size_t i = 0; i < row.size(); ++i) {
+        if (i) std::fputc(',', out);
+        std::fputs(row[i].c_str(), out);
+    }
+    std::fputc('\n', out);
+
+    std::fclose(out);
+    return true;
+}
 }

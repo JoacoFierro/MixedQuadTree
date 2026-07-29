@@ -108,7 +108,8 @@ namespace Clobscode
 
             virtual bool pointInsideTemplate(const Quadrant &q,const Point3D &P) const;
 
-    
+            virtual unsigned int getTemplatesInsertados() const { return TemplatesInsertados; }
+
         protected:
             list<Quadrant> *Quadrants;
             vector<MeshPoint> *points;

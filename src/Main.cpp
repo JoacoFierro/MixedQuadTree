@@ -36,10 +36,13 @@
 #include "RefinementBoundaryRegion.h"
 #include "RefinementAllRegion.h"
 #include "Point3D.h"
+#include "RunStats.h"
 #include <string>
 #include <cctype>
+#include <ctime>
 #include <time.h>
 #include <chrono>
+#include <limits>
 
 using std::atoi;
 using std::cout;
@@ -124,6 +127,90 @@ void endMsg(){
     // ----- Modificado por Joaquin Fierro --------------
     cerr << "    -h activate persistent homology proyect\n";
     // ------- Fin modificacion --------
+}
+
+//-------------------------------------------------------------------
+//-------------------------------------------------------------------
+
+// Compute metrics that are derivable from the FEMesh alone (no need to
+// re-iterate Quadrants).  These are appended to the stats already
+// collected by Mesher during the pipeline.
+static Clobscode::RunStats computeDerivedStats(
+    const std::shared_ptr<Clobscode::FEMesh> &output,
+    const Clobscode::Mesher &mesher,
+    double gen_ms, double write_ms, double all_ms)
+{
+    using namespace Clobscode;
+    RunStats stats = mesher.getStats();
+    stats.gen_time_ms   = gen_ms;
+    stats.write_time_ms = write_ms;
+    stats.all_time_ms   = all_ms;
+
+    if (!output) {
+        return stats;
+    }
+
+    const auto &elements = output->getElements();
+    stats.n_elements_total = (unsigned int)elements.size();
+    for (const auto &e : elements) {
+        if (e.size() == 3) stats.n_triangles++;
+        else if (e.size() == 4) stats.n_quads++;
+    }
+    stats.quad_triangle_ratio = stats.n_quads > 0
+        ? (double)stats.n_triangles / (double)stats.n_quads
+        : (stats.n_triangles > 0 ? std::numeric_limits<double>::infinity() : 0.0);
+
+    stats.n_points        = (unsigned int)output->getPoints().size();
+    stats.n_outside_nodes = (unsigned int)output->getOutsideNodes().size();
+
+    // Quality metrics (only populated when decoration is on).
+    const auto &minAngles = output->getMinAngles();
+    const auto &maxAngles = output->getMaxAngles();
+    if (!minAngles.empty()) {
+        double minA =  std::numeric_limits<double>::infinity();
+        double maxA = -std::numeric_limits<double>::infinity();
+        double minATri =  std::numeric_limits<double>::infinity();
+        double maxATri = -std::numeric_limits<double>::infinity();
+        double minAQuad =  std::numeric_limits<double>::infinity();
+        double maxAQuad = -std::numeric_limits<double>::infinity();
+        for (size_t i = 0; i < minAngles.size(); ++i) {
+            const double a = minAngles[i];
+            minA  = std::min(minA,  a);
+            maxA  = std::max(maxA,  maxAngles[i]);
+            if (i < elements.size() && elements[i].size() == 3) {
+                minATri = std::min(minATri, a);
+                maxATri = std::max(maxATri, maxAngles[i]);
+            } else if (i < elements.size() && elements[i].size() == 4) {
+                minAQuad = std::min(minAQuad, a);
+                maxAQuad = std::max(maxAQuad, maxAngles[i]);
+            }
+        }
+        if (std::isfinite(minATri))  stats.min_angle_tri  = minATri;
+        if (std::isfinite(maxATri))  stats.max_angle_tri  = maxATri;
+        if (std::isfinite(minAQuad)) stats.min_angle_quad = minAQuad;
+        if (std::isfinite(maxAQuad)) stats.max_angle_quad = maxAQuad;
+    }
+
+    // Refinement level distribution.
+    const auto &refLevels = output->getRefLevels();
+    if (!refLevels.empty()) {
+        unsigned int mn = std::numeric_limits<unsigned int>::max();
+        unsigned int mx = 0;
+        unsigned long long sum = 0;
+        for (auto lvl : refLevels) {
+            mn = std::min(mn, (unsigned int)lvl);
+            mx = std::max(mx, (unsigned int)lvl);
+            sum += lvl;
+            if (lvl < RunStats::MAX_LEVEL_SLOTS) {
+                stats.n_elements_at_level[lvl]++;
+            }
+        }
+        stats.min_ref_level  = mn;
+        stats.max_ref_level  = mx;
+        stats.mean_ref_level = (double)sum / (double)refLevels.size();
+    }
+
+    return stats;
 }
 
 //-------------------------------------------------------------------
@@ -566,10 +653,52 @@ int main(int argc,char** argv){
     cout << " ms"<< endl;
     cout << "  All done in " << std::chrono::duration_cast<chrono::milliseconds>(end_time-start_time).count();
     cout << " ms"<< endl;
-	
+
     // printing Histogram
     if (decoration) {
         Services::WriteHistogram(out_name,output);
+    }
+
+    // ---- Append stats row to output/results.csv ----
+    {
+        double gen_ms   = (double)std::chrono::duration_cast<chrono::milliseconds>(gen_time-start_time).count();
+        double write_ms = (double)std::chrono::duration_cast<chrono::milliseconds>(end_time-gen_time).count();
+        double all_ms   = (double)std::chrono::duration_cast<chrono::milliseconds>(end_time-start_time).count();
+
+        Clobscode::RunStats stats = computeDerivedStats(output, mesher,
+                                                        gen_ms, write_ms, all_ms);
+        stats.in_name  = in_name;
+        stats.out_name = out_name;
+        {
+            auto t = std::chrono::system_clock::now();
+            std::time_t tt = std::chrono::system_clock::to_time_t(t);
+            char buf[32];
+            std::strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%S", std::localtime(&tt));
+            stats.timestamp = buf;
+        }
+
+        // Build the flag vector in the exact order declared by
+        // RunStats::columnNames() (positions 3..15).
+        std::vector<std::pair<std::string,std::string>> flags;
+        flags.emplace_back("ref_level", std::to_string((int)ref_level));
+        flags.emplace_back("decoration", decoration ? "1" : "0");
+        flags.emplace_back("mSampleSize", std::to_string((int)mSampleSize));
+        flags.emplace_back("useTusqh", useTusqh ? "1" : "0");
+        flags.emplace_back("tusqhSampleSize", std::to_string((int)tusqhSampleSize));
+        flags.emplace_back("refineOnEdgeIntersect", refineOnEdgeIntersect ? "1" : "0");
+        flags.emplace_back("tusqhExtraResolveDepth", std::to_string((int)tusqhExtraResolveDepth));
+        flags.emplace_back("useSubgrid", useSubgrid ? "1" : "0");
+        flags.emplace_back("subgridSampleSize", std::to_string((int)subgridSampleSize));
+        {
+            char fbuf[32];
+            std::snprintf(fbuf, sizeof(fbuf), "%.6g", subgridJoinThreshold);
+            flags.emplace_back("subgridJoinThreshold", fbuf);
+        }
+        flags.emplace_back("subgridMinComponentCells", std::to_string((int)subgridMinComponentCells));
+        flags.emplace_back("pinchDetectionMode", std::to_string((int)pinchDetectionMode));
+        flags.emplace_back("Aliasing", Aliasing ? "1" : "0");
+
+        Services::AppendStatsCSV("output/results.csv", stats, flags);
     }
 
     list<RefinementRegion *>::iterator rriter;

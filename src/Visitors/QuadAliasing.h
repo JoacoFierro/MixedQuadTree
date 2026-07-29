@@ -98,6 +98,9 @@ namespace Clobscode
 
             bool validAngularConfiguration(unsigned int shared,unsigned int A,unsigned int B, unsigned int C,unsigned int D);
 
+            virtual unsigned int getPinchesCount() const { return (unsigned int)Pinches.size(); }
+            virtual unsigned int getTemplatesInsertados() const { return TemplatesInsertados; }
+
         protected:
             list<Quadrant> *Quadrants;
             vector<MeshPoint> *points;

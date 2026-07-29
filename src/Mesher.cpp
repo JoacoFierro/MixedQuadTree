@@ -923,7 +923,8 @@ namespace Clobscode
                                       const unsigned short &givenmaxrl,
                                       const bool &debugging,
                                       unsigned int new_q_idx,bool Aliasing) {
-        
+        mStats.n_initial_quadrants = Quadrants.size();
+
         
         auto start_time = chrono::high_resolution_clock::now();
         
@@ -1418,6 +1419,8 @@ namespace Clobscode
         cout << "    * generateQuadtreeMesh in "
         << std::chrono::duration_cast<chrono::milliseconds>(end_time-start_time).count();
         cout << " ms"<< endl;
+
+        mStats.n_final_quadrants = (unsigned int)Quadrants.size();
     }
     
     //--------------------------------------------------------------------------------
@@ -1963,6 +1966,7 @@ namespace Clobscode
         }
 
         for (unsigned int depth = 0; depth < effectiveMaxDepth; ++depth) {
+            mStats.tusqh_iter_count++;
             auto start_depth_time = chrono::high_resolution_clock::now();
             new_pts.clear();
             new_candidates.clear();
@@ -1997,6 +2001,7 @@ namespace Clobscode
                 } else {
                     refine_tmp.push_back(quad);
                     refinedCount++;
+                    mStats.tusqh_refined_count++;
                 }
             }
 
@@ -2244,6 +2249,7 @@ namespace Clobscode
                     break;
             }
         }
+        mStats.preserved_outside = preservedOutside;
         processed.clear();
 
         if (preservedOutside > 0) {
@@ -2285,6 +2291,7 @@ namespace Clobscode
                     kept_non_mixed.push_back(std::move(q));
                 }
             }
+            mStats.mixed_before_resolve = mixedBefore;
             Quadrants.clear();
 
             cout << "    * TUSQH resolve pass: " << mixedBefore
@@ -2373,6 +2380,7 @@ namespace Clobscode
                                 new_resolve_candidates.push_back(std::move(o));
                             }
                             ++refinedInIter;
+                            mStats.tusqh_refined_count++;
                         }
                     }
 
@@ -2435,6 +2443,7 @@ namespace Clobscode
                     Quadrants.push_back(std::move(q));
                     ++leftoverMixed;
                 }
+                mStats.leftover_mixed = leftoverMixed;
                 // Append AllInside cells produced during resolve.
                 for (auto& q : kept_non_mixed) {
                     Quadrants.push_back(std::move(q));
@@ -3602,6 +3611,7 @@ namespace Clobscode
         // pathological inputs.
         const int maxBridgeIterations = 5;
         int totalBridgesAdded = 0;
+        mStats.min_component_cells = minComponentCells;
 
         // q_id counter for new bridge quads. Start at one past the
         // largest existing q_id so we don't collide.
@@ -3670,6 +3680,7 @@ namespace Clobscode
                 }
                 ++numComponents;
             }
+            mStats.num_components = (unsigned int)numComponents;
 
             // ---- B) Bridge candidate collection ----
             // For each MapEdge whose BOTH sides are interior quads in
@@ -3882,6 +3893,7 @@ namespace Clobscode
 
             if (bridgesThisIter == 0) break;
             totalBridgesAdded += bridgesThisIter;
+            mStats.total_bridges_added = (unsigned int)totalBridgesAdded;
 
             cout << "    [bridge iter " << bridgeIter
                  << "] added " << bridgesThisIter
@@ -3936,6 +3948,10 @@ namespace Clobscode
                         case WindingState::Mixed:      ++nMixed; break;
                     }
                 }
+                mStats.n_postbridge_unknown     = nUnknown;
+                mStats.n_postbridge_allinside   = nAllInside;
+                mStats.n_postbridge_alloutside  = nAllOutside;
+                mStats.n_postbridge_mixed       = nMixed;
                 cout << "    [postbridge winding] Unknown=" << nUnknown
                      << " AllInside=" << nAllInside
                      << " AllOutside=" << nAllOutside
@@ -4015,6 +4031,7 @@ namespace Clobscode
             }
             ++numComponents;
         }
+        mStats.num_components = (unsigned int)numComponents;
 
 #if (VTKOUT==true)
         {
@@ -4108,6 +4125,7 @@ vector<bool> keepQuad(Quadrants.size(), false);
             if (keepQuad[qi]) kept.push_back(Quadrants[qi]);
         }
         droppedQuads = (int)(Quadrants.size() - kept.size());
+        mStats.dropped_quads = (unsigned int)droppedQuads;
 
         // Rebuild MapEdges from scratch using the kept quads. We have
         // to renumber q_ids so that EdgeInfo can still reference them
@@ -4213,6 +4231,9 @@ vector<bool> keepQuad(Quadrants.size(), false);
             cout<< "Generando Pinches" << endl;
             qa.CreateTemplates();
 
+            mStats.n_pinches_detected = qa.getPinchesCount();
+            mStats.n_pinch_templates  = qa.getTemplatesInsertados();
+
             auto end_time_P = chrono::high_resolution_clock::now();
 
             cout << "-------Insersion de templates Pinches : " 
@@ -4238,6 +4259,8 @@ vector<bool> keepQuad(Quadrants.size(), false);
             cout<< "Arreglando templates" << endl;
             ar.fixTemplates(maxDepth);
 
+            mStats.n_archipelago_templates = ar.getTemplatesInsertados();
+
             auto end_time_A = chrono::high_resolution_clock::now();
             cout << "-------Insersion de templates Archipielagos : " 
                      << std::chrono::duration_cast<chrono::milliseconds>(end_time_A-start_time_A).count()
@@ -4247,6 +4270,16 @@ vector<bool> keepQuad(Quadrants.size(), false);
             saveOutputMesh(templates_octree,points,tmp_Quadrants);
             tmp_name = name + "_templatesArchipielago";
             Services::WriteVTK(tmp_name,templates_octree);
+
+            unsigned int totalQuads = (unsigned int)tmp_Quadrants.size();
+            unsigned int templateQuads = 0;
+            for (const auto &q : tmp_Quadrants) {
+                if (q.getIsTemplate()) templateQuads++;
+            }
+            double pct = totalQuads > 0 ? 100.0 * templateQuads / totalQuads : 0.0;
+            cout << "    * Template percentage: " << pct << "% ("
+                 << templateQuads << " of " << totalQuads << " quads)" << endl;
+            mStats.template_pct_quads = pct;
         }
         //------------ Fin desarrollo -------------------------
 

@@ -19,7 +19,7 @@ set(SOURCE_FILES Main
         Mesher GridMesher MeshPoint SubgridSampler
 	RefinementRegion RefinementFunctionRegion RefinementCubeRegion RefinementSurfaceRegion
 	RefinementInputSurfaceRegion RefinementAllRegion RefinementBoundaryRegion RefinementDrawingRegion
-        GeometricTransform Services
+        GeometricTransform Services RunStats
         Visitors/Visitor Visitors/SplitVisitor
 	Visitors/IntersectionsVisitor
         Visitors/TransitionPatternVisitor

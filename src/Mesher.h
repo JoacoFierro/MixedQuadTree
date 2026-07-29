@@ -52,6 +52,7 @@
 #include "Visitors/QuadAliasing.h"
 #include "Visitors/Archipielago.h"
 // ----- Fin modificacion ---------------------------
+#include "RunStats.h"
 
 #include <list>
 #include <vector>
@@ -113,7 +114,13 @@ namespace Clobscode
         
         virtual void setInitialState(vector<MeshPoint> &epts, vector<Quadrant> &eocts,
                                      map<QuadEdge, EdgeInfo> &medgs);
-        
+
+        // ---- Metrics accessors (used by Main.cpp to build RunStats rows) ----
+        virtual const RunStats &getStats() const { return mStats; }
+        virtual const std::vector<MeshPoint> &getPoints() const { return points; }
+        virtual const std::vector<Quadrant>  &getQuadrants() const { return Quadrants; }
+        virtual const std::map<QuadEdge, EdgeInfo> &getMapEdges() const { return MapEdges; }
+
 	protected:
         
         virtual void splitQuadrants(const unsigned short &rl, Polyline &input,
@@ -406,6 +413,10 @@ namespace Clobscode
         // subgrid VF computed by computeSubcellVolumeFractions.
         std::map<QuadEdge, EdgeSubcellVFData> mEdgeSubcellVF;
 
+        // Metrics aggregated during a run.  Populated as the pipeline
+        // progresses; readable via getStats() once generateMesh /
+        // refineMesh has returned.
+        RunStats mStats;
 
 
 	};

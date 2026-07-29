@@ -38,6 +38,7 @@
 #include "Quadrant.h"
 #include "QuadEdge.h"
 #include "EdgeInfo.h"
+#include "RunStats.h"
 #include <stdlib.h>
 #include <memory>
 #include <limits>
@@ -163,6 +164,22 @@ public:
     //-------------------------------------------------------------------
     //-------------------------------------------------------------------
     static bool WriteHistogram(std::string name, const std::shared_ptr<FEMesh> &output);
+
+    //-------------------------------------------------------------------
+    //-------------------------------------------------------------------
+    // Append one row to a CSV stats file.  If the file does not exist
+    // or is empty, the canonical header (RunStats::columnNames()) is
+    // written first.  `flags` is a list of (key, value) pairs whose
+    // values overwrite the empty flag placeholders in RunStats::toRow().
+    // (The pair ordering must match the flag columns declared in
+    // RunStats::columnNames(): ref_level, decoration, mSampleSize,
+    // useTusqh, tusqhSampleSize, refineOnEdgeIntersect,
+    // tusqhExtraResolveDepth, useSubgrid, subgridSampleSize,
+    // subgridJoinThreshold, subgridMinComponentCells,
+    // pinchDetectionMode, Aliasing.)
+    static bool AppendStatsCSV(std::string csv_path,
+                                const RunStats &stats,
+                                const std::vector<std::pair<std::string,std::string>> &flags);
 };
 
 }
