@@ -890,7 +890,7 @@ bool Services::WriteGMSH(std::string name, const shared_ptr<FEMesh> &output){
 //-------------------------------------------------------------------
 //-------------------------------------------------------------------
 bool Services::WriteVTK(std::string name, const shared_ptr<FEMesh> &output){
-
+    
     vector<Point3D> points = output->getPoints();
     vector<vector<unsigned int> > elements = output->getElements();
 

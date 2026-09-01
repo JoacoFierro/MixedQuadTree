@@ -21,6 +21,9 @@
 #include "Archipielago.h"
 #include "../GridMesher.h"
 #include "QuadAliasing.h"
+#include <climits>
+#include <fstream>
+#include <iomanip>
 
  namespace Clobscode {
 
@@ -267,8 +270,7 @@
         }
 
         for (auto templateEdge:  TemplesAdded){
-            const Quadrant* quad1 = templateEdge.quad1;
-            const Quadrant* quad2 = templateEdge.quad2;
+
             QuadEdge e = templateEdge.edge;
             Point3D p1 = (*points)[e[0]].getPoint();
             Point3D p2 = (*points)[e[1]].getPoint();
@@ -544,6 +546,7 @@ bool Archipielago::pointInsideTemplate(const Quadrant &q, const Point3D &P) cons
                 return id[(i+1)%len];
             }
         }
+        return UINT_MAX;
     }
 
     void Archipielago::fixTemplates(unsigned int maxDepth){
@@ -551,6 +554,8 @@ bool Archipielago::pointInsideTemplate(const Quadrant &q, const Point3D &P) cons
         ToFixWithTems.clear();
    
         getTemplatesToFix();
+        saveFixInformation("../Checkpoints/archipielago_before_fix.txt");
+
         QuadAliasing qa;
         QuadEdge Qedge1,Qedge2,Quadrant_edge,Tedge;
         unsigned int sharedVertex;
@@ -566,6 +571,8 @@ bool Archipielago::pointInsideTemplate(const Quadrant &q, const Point3D &P) cons
         QuadEdge Edge1a,Edge1b,Edge2a,Edge2b;
         unsigned int p1a,p1b,p2a,p2b;
 
+        const std::string& filename = "../Checkpoints/Archipielago_between";
+        std::ofstream file(filename);
         for(FixWithTemp &ToRepair: ToFixWithTems){
             // cout << "Iteracion 1" <<endl;
             Tedge1 = ToRepair.Template1.edge;
@@ -573,26 +580,54 @@ bool Archipielago::pointInsideTemplate(const Quadrant &q, const Point3D &P) cons
             sharedVertex = ToRepair.sharedVertex;
             // cout << "Iteracion 2" <<endl;
 
+            file <<"-----------------------------------";
+            file <<"Shared vertex: " << sharedVertex <<endl;
             if (ToRepair.Template1.quad1) {
                 const Quadrant quad1a = *ToRepair.Template1.quad1;
                 p1a = getIndexWithSharedVertex(quad1a,sharedVertex,Tedge1);
+
+                const Point3D &P1a = (*points)[p1a].getPoint();
+                file <<"Index p1a:" << p1a <<endl;
+                file << "Coor:  ("<< P1a.X() << ", "<< P1a.Y() << ", "<< P1a.Z() << ")\n";
+
+                
             }
             if (ToRepair.Template1.quad2) {
                 const Quadrant quad1b = *ToRepair.Template1.quad2;
                 p1b = getIndexWithSharedVertex(quad1b,sharedVertex,Tedge1);
+
+                const Point3D &P1b = (*points)[p1b].getPoint();
+                file <<"Index p1b:" << p1b <<endl;
+                file << "Coor:  ("<< P1b.X() << ", "<< P1b.Y() << ", "<< P1b.Z() << ")\n";
+                
             }
             if (ToRepair.Template2.quad1) {
                 const Quadrant quad2a = *ToRepair.Template2.quad1;
                 p2a = getIndexWithSharedVertex(quad2a,sharedVertex,Tedge2);
+
+                const Point3D &P2a = (*points)[p2a].getPoint();
+                file <<"Index p2a:" << p2a <<endl;
+                file << "Coor:  ("<< P2a.X() << ", "<< P2a.Y() << ", "<< P2a.Z() << ")\n";
+
             }
 
             if (ToRepair.Template2.quad2) {
                 const Quadrant quad2b = *ToRepair.Template2.quad2;
                 p2b = getIndexWithSharedVertex(quad2b,sharedVertex,Tedge2);
+
+                const Point3D &P2b = (*points)[p2b].getPoint();
+                file <<"Index p2b:" << p2b <<endl;
+                file << "Coor:  ("<< P2b.X() << ", "<< P2b.Y() << ", "<< P2b.Z() << ")\n";
+
             }
             createFixWithTemp(sharedVertex,p1a,p1b,p2a,p2b,maxDepth);
-
         }
+
+        file << "============================================================\n";
+        file << "END\n";
+        file << "============================================================\n";
+
+        file.close();
 
         cout<< "Templates Archipielagos Insertados: " << TemplatesInsertados << endl;
         ToFixWithQuads.clear();
@@ -600,6 +635,333 @@ bool Archipielago::pointInsideTemplate(const Quadrant &q, const Point3D &P) cons
         TemplesAdded.clear();
 
 
-
     }
+
+
+    void Archipielago::saveFixInformation(const std::string& filename) const {
+
+        std::ofstream file(filename);
+
+        if (!file.is_open()) {
+            std::cerr << "Error: no se pudo abrir el archivo "
+                    << filename << std::endl;
+            return;
+        }
+
+        file << std::fixed << std::setprecision(10);
+
+        // ============================================================
+        // TEMPLEs ADDED
+        // ============================================================
+
+        file << "============================================================\n";
+        file << "TEMPLEs ADDED\n";
+        file << "============================================================\n";
+
+        file << "Cantidad: " << TemplesAdded.size() << "\n\n";
+
+        for (size_t i = 0; i < TemplesAdded.size(); ++i) {
+
+            const TemplateInfo &T = TemplesAdded[i];
+
+            unsigned int p0 = T.edge[0];
+            unsigned int p1 = T.edge[1];
+
+            file << "Template " << i << "\n";
+            file << "  Edge: "
+                << p0 << " - "
+                << p1 << "\n";
+
+            if (points &&
+                p0 < points->size() &&
+                p1 < points->size()) {
+
+                const Point3D &P0 = (*points)[p0].getPoint();
+                const Point3D &P1 = (*points)[p1].getPoint();
+
+                file << "  P0: "
+                    << p0 << " -> ("
+                    << P0.X() << ", "
+                    << P0.Y() << ", "
+                    << P0.Z() << ")\n";
+
+                file << "  P1: "
+                    << p1 << " -> ("
+                    << P1.X() << ", "
+                    << P1.Y() << ", "
+                    << P1.Z() << ")\n";
+            }
+
+            // --------------------------------------------------------
+            // Quad 1
+            // --------------------------------------------------------
+
+            if (T.quad1 != nullptr) {
+
+                const vector<unsigned int> idx =
+                    T.quad1->getPointIndex();
+
+                file << "  Quad1:\n";
+                file << "    Quad vertices: ";
+
+                for (unsigned int id : idx)
+                    file << id << " ";
+
+                file << "\n";
+            }
+
+            // --------------------------------------------------------
+            // Quad 2
+            // --------------------------------------------------------
+
+            if (T.quad2 != nullptr) {
+
+                const vector<unsigned int> idx =
+                    T.quad2->getPointIndex();
+
+                file << "  Quad2:\n";
+                file << "    Quad vertices: ";
+
+                for (unsigned int id : idx)
+                    file << id << " ";
+
+                file << "\n";
+            }
+
+            file << "\n";
+        }
+
+
+        // ============================================================
+        // TO FIX WITH QUADS
+        // ============================================================
+
+        file << "============================================================\n";
+        file << "TO FIX WITH QUADS\n";
+        file << "============================================================\n";
+
+        file << "Cantidad: "
+            << ToFixWithQuads.size()
+            << "\n\n";
+
+        for (size_t i = 0; i < ToFixWithQuads.size(); ++i) {
+
+            const FixWithQuad &F = ToFixWithQuads[i];
+
+            file << "FixWithQuad " << i << "\n";
+
+            // --------------------------------------------------------
+            // Shared vertex
+            // --------------------------------------------------------
+
+            unsigned int shared = F.sharedVertex;
+
+            file << "  SharedVertex: "
+                << shared << "\n";
+
+            if (points && shared < points->size()) {
+
+                const Point3D &P =
+                    (*points)[shared].getPoint();
+
+                file << "    Coordinates: ("
+                    << P.X() << ", "
+                    << P.Y() << ", "
+                    << P.Z() << ")\n";
+            }
+
+            // --------------------------------------------------------
+            // Template edge
+            // --------------------------------------------------------
+
+            file << "  Template edge: "
+                << F.qTemplate.edge[0]
+                << " - "
+                << F.qTemplate.edge[1]
+                << "\n";
+
+            // --------------------------------------------------------
+            // Template Quad 1
+            // --------------------------------------------------------
+
+            if (F.qTemplate.quad1 != nullptr) {
+
+                const vector<unsigned int> idx =
+                    F.qTemplate.quad1->getPointIndex();
+
+                file << "  Template Quad1: ";
+
+                for (unsigned int id : idx)
+                    file << id << " ";
+
+                file << "\n";
+            }
+
+            // --------------------------------------------------------
+            // Template Quad 2
+            // --------------------------------------------------------
+
+            if (F.qTemplate.quad2 != nullptr) {
+
+                const vector<unsigned int> idx =
+                    F.qTemplate.quad2->getPointIndex();
+
+                file << "  Template Quad2: ";
+
+                for (unsigned int id : idx)
+                    file << id << " ";
+
+                file << "\n";
+            }
+
+            // --------------------------------------------------------
+            // Quadrant to repair
+            // --------------------------------------------------------
+
+            if (F.qQuadrant != nullptr) {
+
+                const vector<unsigned int> idx =
+                    F.qQuadrant->getPointIndex();
+
+                file << "  Quadrant to repair: ";
+
+                for (unsigned int id : idx)
+                    file << id << " ";
+
+                file << "\n";
+            }
+
+            file << "\n";
+        }
+
+
+        // ============================================================
+        // TO FIX WITH TEMPLATES
+        // ============================================================
+
+        file << "============================================================\n";
+        file << "TO FIX WITH TEMPLATES\n";
+        file << "============================================================\n";
+
+        file << "Cantidad: "
+            << ToFixWithTems.size()
+            << "\n\n";
+
+        for (size_t i = 0; i < ToFixWithTems.size(); ++i) {
+
+            const FixWithTemp &F = ToFixWithTems[i];
+
+            file << "FixWithTemp " << i << "\n";
+
+            // --------------------------------------------------------
+            // Shared vertex
+            // --------------------------------------------------------
+
+            unsigned int shared = F.sharedVertex;
+
+            file << "  SharedVertex: "
+                << shared << "\n";
+
+            if (points && shared < points->size()) {
+
+                const Point3D &P =
+                    (*points)[shared].getPoint();
+
+                file << "    Coordinates: ("
+                    << P.X() << ", "
+                    << P.Y() << ", "
+                    << P.Z() << ")\n";
+            }
+
+            // --------------------------------------------------------
+            // Template 1
+            // --------------------------------------------------------
+
+            file << "  Template1 edge: "
+                << F.Template1.edge[0]
+                << " - "
+                << F.Template1.edge[1]
+                << "\n";
+
+            if (F.Template1.quad1 != nullptr) {
+
+                const vector<unsigned int> idx =
+                    F.Template1.quad1->getPointIndex();
+
+                file << "    Quad1: ";
+
+                for (unsigned int id : idx)
+                    file << id << " ";
+
+                file << "\n";
+            }
+
+            if (F.Template1.quad2 != nullptr) {
+
+                const vector<unsigned int> idx =
+                    F.Template1.quad2->getPointIndex();
+
+                file << "    Quad2: ";
+
+                for (unsigned int id : idx)
+                    file << id << " ";
+
+                file << "\n";
+            }
+
+            // --------------------------------------------------------
+            // Template 2
+            // --------------------------------------------------------
+
+            file << "  Template2 edge: "
+                << F.Template2.edge[0]
+                << " - "
+                << F.Template2.edge[1]
+                << "\n";
+
+            if (F.Template2.quad1 != nullptr) {
+
+                const vector<unsigned int> idx =
+                    F.Template2.quad1->getPointIndex();
+
+                file << "    Quad1: ";
+
+                for (unsigned int id : idx)
+                    file << id << " ";
+
+                file << "\n";
+            }
+
+            if (F.Template2.quad2 != nullptr) {
+
+                const vector<unsigned int> idx =
+                    F.Template2.quad2->getPointIndex();
+
+                file << "    Quad2: ";
+
+                for (unsigned int id : idx)
+                    file << id << " ";
+
+                file << "\n";
+            }
+
+            file << "\n";
+        }
+
+
+        // ============================================================
+        // FIN
+        // ============================================================
+
+        file << "============================================================\n";
+        file << "END\n";
+        file << "============================================================\n";
+
+        file.close();
+
+        std::cout << "Informacion de reparaciones guardada en: "
+                << filename << std::endl;
+        }
+
+    
 }

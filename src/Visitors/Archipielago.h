@@ -110,6 +110,8 @@ namespace Clobscode
 
             virtual unsigned int getTemplatesInsertados() const { return TemplatesInsertados; }
 
+            virtual void saveFixInformation(const std::string& filename) const;
+
         protected:
             list<Quadrant> *Quadrants;
             vector<MeshPoint> *points;

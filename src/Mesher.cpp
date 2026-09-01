@@ -246,7 +246,10 @@ namespace Clobscode
 
         //generate root Quadrants
         generateGridMesh(input);
-        refineBackgroundGrid(rl,input,BackQuadrants.size(),all_reg);
+        if(Aliasing  == true){
+  
+            refineBackgroundGrid(rl,input,BackQuadrants.size(),all_reg);
+        }
 
 #if (VTKOUT==true)         //CL Debbuging
         {
@@ -257,7 +260,7 @@ namespace Clobscode
             Services::WriteVTK(tmp_name,grid_octree);
         }
 #endif
-
+      
         //split Quadrants until the refinement level (rl) is achieved.
         //the last 0 correspond to min RL in the mesh. As this mesh
         //is starting from scratch, this value is set to 0. When refining

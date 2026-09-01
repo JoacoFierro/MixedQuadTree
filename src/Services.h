@@ -180,6 +180,14 @@ public:
     static bool AppendStatsCSV(std::string csv_path,
                                 const RunStats &stats,
                                 const std::vector<std::pair<std::string,std::string>> &flags);
+    //-------------------------------------------------------------------
+    //-------------------------------------------------------------------
+    // static bool WriteCheckPoint(std::string name, 
+    //                             Quadrant Quadrants, Quadrant BackQuadrants, 
+    //                             vector<MeshPoint> Points,vector<MeshPoint> BackPoints ,
+    //                             map<QuadEdge, EdgeInfo> MapEdges,map<QuadEdge, EdgeInfo> BackMapEdges,
+    //                             unsigned int maxDepth,
+    //                             Polyline &input);
 };
 
 }
