@@ -1,5 +1,7 @@
 # Build artifacts
 build/
+Resultados/
+Checkpoints/
 *.o
 *.obj
 *.a

@@ -30,6 +30,8 @@
 #include <map>
 #include <cmath>
 #include <math.h>
+#include <climits>
+#include <iomanip>
 #include "../Quadrant.h"
 #include "../MeshPoint.h"
 #include "../QuadEdge.h"
@@ -87,14 +89,18 @@ namespace Clobscode
 
             virtual void createTemplates(const QuadEdge edge, unsigned int maxDepth);
 
-            virtual void createFixTempQuad(const QuadEdge edge, unsigned int maxDepth,const Quadrant q);
+            virtual void createFixTempQuad(const QuadEdge Qedge,const QuadEdge Tedge, 
+                                        unsigned int maxDepth,
+                                        unsigned int sharedVertex,
+                                        const Quadrant q);
 
             virtual void createFixWithTemp(unsigned int sharedPoint,
                               unsigned int p1a,
                               unsigned int p1b,
                               unsigned int p2a,
                               unsigned int p2b,
-                              unsigned int maxDepth);
+                              unsigned int maxDepth,
+                              std::ofstream& file);
 
             virtual bool SubSampling(const QuadEdge edge);
 
@@ -102,7 +108,7 @@ namespace Clobscode
 
             virtual void fixTemplates(unsigned int maxDepth);
 
-            virtual QuadEdge SelectEdge(QuadEdge Tedge,QuadEdge Qedge1,QuadEdge Qedge2,unsigned int shared);
+            virtual QuadEdge SelectEdge(const QuadEdge Tedge,QuadEdge Qedge1,QuadEdge Qedge2,unsigned int shared);
 
             virtual unsigned int getIndexWithSharedVertex(Quadrant q,unsigned int shared,QuadEdge edge);
 

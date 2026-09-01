@@ -21,9 +21,6 @@
 #include "Archipielago.h"
 #include "../GridMesher.h"
 #include "QuadAliasing.h"
-#include <climits>
-#include <fstream>
-#include <iomanip>
 
  namespace Clobscode {
 
@@ -60,7 +57,7 @@
             id1 = T1.edge[1];
             for(const Quadrant &q: *Quadrants){
                 unsigned int count = 0; 
-                isTemplate = q.getIsTemplate();
+                // isTemplate = q.getIsTemplate();
                 const vector<unsigned int> idx = q.getPointIndex();
                 for (unsigned int i=0; i!=idx.size();i++){
                     if (id0 == idx[i] || id1 == idx[i]){
@@ -123,7 +120,8 @@
                                          unsigned int Id1b,
                                          unsigned int Id2a,
                                          unsigned int Id2b,
-                                         unsigned int maxDepth){
+                                         unsigned int maxDepth,
+                                         std::ofstream& file){
 
         // Obtenemos los puntos 
 
@@ -132,10 +130,15 @@
         Point3D p1b = (*points)[Id1b].getPoint();
         Point3D p2a = (*points)[Id2a].getPoint();
         Point3D p2b = (*points)[Id2b].getPoint();
+
+        double dbase = (p1a-p1b).Norm();
+        double width = dbase*0.687;
         
-        double eps = 1e-6, width = 0.7;
+        double eps = 1e-6;
         bool confAA = true; 
         bool isVertical = abs(p1a.Y() - p1b.Y()) < eps;
+
+        file << "isVertical:" <<  (isVertical? "true" : "false") <<endl;
                
         Point3D dir;
         if(isVertical) // Es vertical la configuracion
@@ -146,18 +149,26 @@
                 confAA = false;
         } else {                        // Es Horizontal  la configuracion
             if (abs(p1a.Y() - p2a.Y()) < eps) { 
+                dir = p1a - p2a;
             } else {
                 dir = p1a -  p2b;
                 confAA = false;
             }
         }
-
+    
         dir.normalize();
+
+        file << "dir: " << dir.X() <<" "<<dir.Y()<<" "<< dir.Z()<<endl;
         Point3D n (-dir.Y(), dir.X(),0);
         n.normalize();
 
+        file << "n: " << n.X() <<" "<<n.Y()<<" "<< n.Z()<<endl;
+
         Point3D I = S + n * width;
         Point3D D = S - n * width;
+
+        file << "I: " << I.X() <<" "<<I.Y()<<" "<< I.Z()<<endl;
+        file << "D: " << D.X() <<" "<<D.Y()<<" "<< D.Z()<<endl;
 
         // Verificar si esta dentrode un template o cuadrante
         bool insertPointI = true, insertPointD = true;
@@ -169,21 +180,27 @@
             Point3D A = (*points)[EdgeVerify[0]].getPoint();
             Point3D B = (*points)[EdgeVerify[1]].getPoint();
             if(isVertical){
-                if( min(A.X(),B.X()) < I.X() && I.X() < max(A.X(),B.X()))insertPointI = false;
-                if( min(A.X(),B.X()) < D.X() && D.X() < max(A.X(),B.X()))insertPointD = false;  
+                if( min(A.X(),B.X()) < I.X() && I.X() < max(A.X(),B.X()) && abs(A.Y() - I.Y()) < eps )insertPointI = false;
+                if( min(A.X(),B.X()) < D.X() && D.X() < max(A.X(),B.X()) && abs(A.Y() - D.Y()) < eps )insertPointD = false;  
             } else{
-                if( min(A.Y(),B.Y()) < I.Y() && I.Y() < max(A.Y(),B.Y()))insertPointI = false;
-                if( min(A.Y(),B.Y()) < D.Y() && D.Y() < max(A.Y(),B.Y()))insertPointD = false;  
+                if( min(A.Y(),B.Y()) < I.Y() && I.Y() < max(A.Y(),B.Y()) && abs(A.X() - I.X()) < eps )insertPointI = false;
+                if( min(A.Y(),B.Y()) < D.Y() && D.Y() < max(A.Y(),B.Y()) && abs(A.X() - D.X()) < eps )insertPointD = false;  
             }
         }
+
+        file << "insertPointI: " << (insertPointI ? "true" : "false") << endl;
+        file << "insertPointD: " << (insertPointD ? "true" : "false") << endl;
 
         if(insertPointI){
             idI=points->size();
             points->push_back(MeshPoint(I));
+
+            file << "idI: " << idI << endl;
         }
         if(insertPointD){
             idD=points->size();
             points->push_back(MeshPoint(D));
+            file << "idD: " << idD << endl;
         }
 
         //Determinanmos la correspondencia entre puntos
@@ -191,7 +208,12 @@
         double da = I.distance(p1a);
         double db = I.distance(p1b);
 
+        file << "da: " <<da <<endl;
+        file << "db: " <<db <<endl;
+
         if(da < db ? insertPointI :insertPointD ){
+            file <<"Indices: " << (da < db ? idI : idD) << " "<<Id1a <<" "<<sharedPoint <<" "<<(confAA ? Id2a: Id2b)<< endl;
+
             vector<unsigned int> QuadA = { (da < db ? idI : idD) ,  Id1a, sharedPoint, (confAA ? Id2a: Id2b)}; 
             Quadrant q1 (QuadA,maxDepth, (*CurrentQuadIndex)++);
             q1.setIsTemplate(true);
@@ -199,6 +221,8 @@
             TemplatesInsertados++;
         }
         if(da < db ? insertPointD :insertPointI ){
+            file <<"Indices: " << (da < db ? idD : idI) << " "<<(confAA ? Id2b: Id2a )<<" "<<sharedPoint <<" "<< Id1b<< endl;
+
             vector<unsigned int> QuadB = { (da < db ?idD : idI),  (confAA ? Id2b: Id2a), sharedPoint, Id1b }; 
             Quadrant q2 (QuadB,maxDepth, (*CurrentQuadIndex)++);
             q2.setIsTemplate(true);
@@ -208,9 +232,61 @@
     }
 
 
-    void Archipielago::createFixTempQuad(const QuadEdge edge, unsigned int maxDepth,const Quadrant q){
-        unsigned int idp0 = edge[0];
-        unsigned int idp1 = edge[1];
+    void Archipielago::createFixTempQuad(const QuadEdge Qedge, const QuadEdge Tedge, 
+                                        unsigned int maxDepth,
+                                        unsigned int sharedVertex,
+                                        const Quadrant q){
+
+        unsigned int RefLevelQuad = q.getRefinementLevel();
+
+        unsigned int idp0, idp1
+        if (RefLevelQuad != maxDepth) {
+
+            idp0 = sharedVertex;
+
+            unsigned int indTp0 = Tedge[0];
+            unsigned int indTp1 = Tedge[1];
+
+            unsigned int indQp0 = Qedge[0];
+            unsigned int indQp1 = Qedge[1];
+
+            const Point3D Tp0 = (*points)[indTp0].getPoint();
+            const Point3D Tp1 = (*points)[indTp1].getPoint();
+
+            const Point3D Qp0 = (*points)[indQp0].getPoint();
+            const Point3D Qp1 = (*points)[indQp1].getPoint();
+
+            double distT = (Tp1 - Tp0).Norm();
+
+            Point3D dirQ = Qp1 - Qp0;
+            dirQ.normalize();
+
+            unsigned int OppositeIndxQuad = (sharedVertex == indQp0) ? indQp1 : indQp0;
+
+            const Point3D OppQ = (*points)[OppositeIndxQuad].getPoint();
+
+            Point3D toOpp = OppQ - Qp0;
+            toOpp.normalize();
+
+            if (dirQ.dot(toOpp) < 0.0) {
+                dirQ = -dirQ;
+            }
+
+            
+
+
+        }
+
+
+
+
+            
+
+        } else { //Mismo nivel de refinamiento
+            idp0 = Qedge[0];
+            idp1 = Qedge[1];
+        }
+
 
         const Point3D p0 = (*points)[idp0].getPoint();
         const Point3D p1 = (*points)[idp1].getPoint();
@@ -242,7 +318,7 @@
         bool insertPointC  = true;
         unsigned int idA,idC;
 
-        QuadAliasing qa;
+        QuadAliasing qa; //Problema: se podria usar el mismo struct Template para valida puntos
         for (unsigned int i = 0; i < points->size(); ++i) {
             const Point3D &p = (*points)[i].getPoint();
             if (qa.ComparePoints(A,p)){
@@ -271,7 +347,7 @@
 
         for (auto templateEdge:  TemplesAdded){
 
-            QuadEdge e = templateEdge.edge;
+            QuadEdge e = templateEdge.Qedge;
             Point3D p1 = (*points)[e[0]].getPoint();
             Point3D p2 = (*points)[e[1]].getPoint();
 
@@ -336,15 +412,6 @@
                 break;
         }
 
-        if(insertPointsP0){
-            idp0=points->size();
-            points->push_back(MeshPoint(p0));
-        }
-        if(insertPointsP1){
-            idp1=points->size();
-            points->push_back(MeshPoint(p1));
-        }
-
         Point3D dir = p1 - p0;
         double L = dir.Norm();
         dir.normalize();
@@ -394,15 +461,95 @@
             // }
         }
 
+    
         if ((InsertA && InsertC) && (InsertB && InsertD)){
+
+            if(insertPointsP0){
+                idp0=points->size();
+                points->push_back(MeshPoint(p0));
+            }
+            if(insertPointsP1){
+                idp1=points->size();
+                points->push_back(MeshPoint(p1));
+            }
+
+            bool InsertAiMesh = true;
+            bool InsertBiMesh = true;
+            bool InsertCiMesh = true;
+            bool InsertDiMesh = true;
+
+            unsigned int idA, idB, idC, idD;
+
+            QuadAliasing qa;
+
+            for(const TemplateInfo& tinfo : TemplesAdded){
+
+                const vector<unsigned int> indexQ1 = tinfo.quad1->getPointIndex();
+                const vector<unsigned int> indexQ2 = tinfo.quad2->getPointIndex();
+                
+                for (unsigned int indQ1 : indexQ1) {
+
+                    Point3D p1_test = (*points)[indQ1].getPoint();
+
+                    if (qa.ComparePoints(A, p1_test)) {
+                        InsertAiMesh = false;
+                        idA = indQ1;
+                    }
+
+                    if (qa.ComparePoints(B, p1_test)) {
+                        InsertBiMesh = false;
+                        idB = indQ1;
+                    }
+
+                    if (qa.ComparePoints(C, p1_test)) {
+                        InsertCiMesh = false;
+                        idC = indQ1;
+                    }
+
+                    if (qa.ComparePoints(D, p1_test)) {
+                        InsertDiMesh = false;
+                        idD = indQ1;
+                    }
+                }
+
+                for (unsigned int indQ2 : indexQ2) {
+
+                    Point3D p2_test = (*points)[indQ2].getPoint();
+
+                    if (qa.ComparePoints(A, p2_test)) {
+                        InsertAiMesh = false;
+                        idA = indQ2;
+                    }
+
+                    if (qa.ComparePoints(B, p2_test)) {
+                        InsertBiMesh = false;
+                        idB = indQ2;
+                    }
+
+                    if (qa.ComparePoints(C, p2_test)) {
+                        InsertCiMesh = false;
+                        idC = indQ2;
+                    }
+
+                    if (qa.ComparePoints(D, p2_test)) {
+                        InsertDiMesh = false;
+                        idD = indQ2;
+                    }
+                }
+            }
+            
             TemplateInfo ti;
             QuadEdge e1(idp0,idp1);
             ti.edge = e1;
-            //Fist Quadrant
-            unsigned int idA=points->size();
-            points->push_back(MeshPoint(A));
-            unsigned int idC=points->size();
-            points->push_back(MeshPoint(C));
+      
+            if(InsertAiMesh){
+                idA=points->size();
+                points->push_back(MeshPoint(A));
+            }
+            if(InsertCiMesh){
+                idC=points->size();
+                points->push_back(MeshPoint(C));
+            }
 
             vector<unsigned int> QuadAC = {idp0,idA,idC,idp1};
             Quadrant q1 (QuadAC,maxDepth, (*CurrentQuadIndex)++);
@@ -415,10 +562,14 @@
   
 
             //Second Quadrant
-            unsigned int idB=points->size();
-            points->push_back(MeshPoint(B));
-            unsigned int idD=points->size();
-            points->push_back(MeshPoint(D));
+            if(InsertBiMesh){
+                idB=points->size();
+                points->push_back(MeshPoint(B));
+            }
+            if(InsertDiMesh){
+                idD=points->size();
+                points->push_back(MeshPoint(D));
+            }
             
             vector<unsigned int> QuadBD = {idp0,idB,idD,idp1};
             Quadrant q2 (QuadBD, maxDepth, (*CurrentQuadIndex)++);
@@ -501,7 +652,7 @@ bool Archipielago::pointInsideTemplate(const Quadrant &q, const Point3D &P) cons
         return false;
     }
 
-    QuadEdge Archipielago::SelectEdge(QuadEdge Tedge,QuadEdge Qedge1,QuadEdge Qedge2,unsigned int shared){
+    QuadEdge Archipielago::SelectEdge(const QuadEdge Tedge,QuadEdge Qedge1,QuadEdge Qedge2,unsigned int shared){
 
         auto getDirection = [&](const QuadEdge &e) -> Point3D {
 
@@ -557,15 +708,15 @@ bool Archipielago::pointInsideTemplate(const Quadrant &q, const Point3D &P) cons
         saveFixInformation("../Checkpoints/archipielago_before_fix.txt");
 
         QuadAliasing qa;
-        QuadEdge Qedge1,Qedge2,Quadrant_edge,Tedge;
+        QuadEdge Qedge1,Qedge2,Quadrant_edge;
         unsigned int sharedVertex;
         for(const FixWithQuad &ToRepair: ToFixWithQuads){
             sharedVertex = ToRepair.sharedVertex;
-            Tedge = ToRepair.qTemplate.edge;
+            const QuadEdge Tedge = ToRepair.qTemplate.edge;
             const Quadrant &quad = *ToRepair.qQuadrant;
-            qa.getAdjacentEdges(quad,sharedVertex,Qedge1,Qedge2);
+            qa.getAdjacentEdges(quad,sharedVertex,Qedge1,Qedge2); //Obtener 
             Quadrant_edge = SelectEdge(Tedge,Qedge1,Qedge2,sharedVertex);
-            createFixTempQuad(Quadrant_edge,maxDepth,quad);
+            createFixTempQuad(Quadrant_edge,Tedge,sharedVertex,maxDepth,quad);
         }
         QuadEdge Tedge1, Tedge2;
         QuadEdge Edge1a,Edge1b,Edge2a,Edge2b;
@@ -620,7 +771,7 @@ bool Archipielago::pointInsideTemplate(const Quadrant &q, const Point3D &P) cons
                 file << "Coor:  ("<< P2b.X() << ", "<< P2b.Y() << ", "<< P2b.Z() << ")\n";
 
             }
-            createFixWithTemp(sharedVertex,p1a,p1b,p2a,p2b,maxDepth);
+            createFixWithTemp(sharedVertex,p1a,p1b,p2a,p2b,maxDepth,file);
         }
 
         file << "============================================================\n";

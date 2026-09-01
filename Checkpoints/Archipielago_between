@@ -1,84 +1,177 @@
------------------------------------Shared vertex: 1031
-Index p1a:1033
+-----------------------------------Shared vertex: 1030
+Index p1a:1032
 Coor:  (9.80244, 18.883, 0)
-Index p1b:1035
+Index p1b:1034
 Coor:  (8.78339, 18.883, 0)
-Index p2a:1043
+Index p2a:1038
 Coor:  (8.78339, 19.902, 0)
-Index p2b:1045
+Index p2b:1042
 Coor:  (9.80244, 19.902, 0)
------------------------------------Shared vertex: 1060
-Index p1a:1062
+isVertical:true
+dir: 0 -1 0
+n: 1 0 0
+I: 9.99301 19.3925 0
+D: 8.59282 19.3925 0
+insertPointI: true
+insertPointD: false
+idI: 1378
+da: 0.543997
+db: 1.31255
+Indices: 1378 1032 1030 1042
+-----------------------------------Shared vertex: 1057
+Index p1a:1059
 Coor:  (16.2076, 37.5162, 0)
-Index p1b:1064
+Index p1b:1061
 Coor:  (15.1886, 37.5162, 0)
-Index p2a:1066
+Index p2a:1063
 Coor:  (15.1886, 36.4972, 0)
-Index p2b:1068
+Index p2b:1065
 Coor:  (16.2076, 36.4972, 0)
------------------------------------Shared vertex: 1086
-Index p1a:1088
+isVertical:true
+dir: 0 1 0
+n: -1 0 0
+I: 14.998 37.0067 0
+D: 16.3982 37.0067 0
+insertPointI: false
+insertPointD: false
+da: 1.31255
+db: 0.543997
+-----------------------------------Shared vertex: 1083
+Index p1a:1085
 Coor:  (21.5937, 65.3204, 0)
-Index p1b:1090
+Index p1b:1087
 Coor:  (22.6128, 65.3204, 0)
-Index p2a:1112
+Index p2a:1109
 Coor:  (22.6128, 66.3395, 0)
-Index p2b:1114
+Index p2b:1111
 Coor:  (21.5937, 66.3395, 0)
------------------------------------Shared vertex: 1145
-Index p1a:1147
+isVertical:true
+dir: -6.97256e-15 -1 0
+n: 1 -6.97256e-15 0
+I: 22.8033 65.83 0
+D: 21.4032 65.83 0
+insertPointI: false
+insertPointD: false
+da: 1.31255
+db: 0.543997
+-----------------------------------Shared vertex: 1140
+Index p1a:1141
 Coor:  (13.5873, 18.3007, 0)
-Index p1b:1149
+Index p1b:1143
 Coor:  (13.5873, 17.2817, 0)
-Index p2a:1158
+Index p2a:1152
 Coor:  (14.6063, 17.2817, 0)
-Index p2b:1160
+Index p2b:1154
 Coor:  (14.6063, 18.3007, 0)
------------------------------------Shared vertex: 1060
-Index p1a:1196
+isVertical:false
+dir: -1 3.48628e-15 0
+n: -3.48628e-15 -1 0
+I: 14.0968 17.0911 0
+D: 14.0968 18.4913 0
+insertPointI: true
+insertPointD: true
+idI: 1379
+idD: 1380
+da: 1.31255
+db: 0.543997
+Indices: 1380 1141 1140 1154
+Indices: 1379 1152 1140 1143
+-----------------------------------Shared vertex: 1057
+Index p1a:1059
 Coor:  (16.2076, 37.5162, 0)
-Index p1b:1198
+Index p1b:1065
 Coor:  (16.2076, 36.4972, 0)
-Index p2a:1201
+Index p2a:1063
 Coor:  (15.1886, 36.4972, 0)
-Index p2b:1203
+Index p2b:1061
 Coor:  (15.1886, 37.5162, 0)
------------------------------------Shared vertex: 1221
-Index p1a:1223
+isVertical:false
+dir: 1 0 0
+n: -0 1 0
+I: 15.6981 37.7068 0
+D: 15.6981 36.3066 0
+insertPointI: false
+insertPointD: false
+da: 0.543997
+db: 1.31255
+-----------------------------------Shared vertex: 1201
+Index p1a:1203
 Coor:  (11.4037, 49.3075, 0)
-Index p1b:1225
+Index p1b:1205
 Coor:  (11.4037, 50.3266, 0)
-Index p2a:1232
+Index p2a:1209
 Coor:  (10.3847, 50.3266, 0)
-Index p2b:1234
+Index p2b:1211
 Coor:  (10.3847, 49.3075, 0)
------------------------------------Shared vertex: 1306
-Index p1a:1308
+isVertical:false
+dir: 1 0 0
+n: -0 1 0
+I: 10.8942 50.5171 0
+D: 10.8942 49.117 0
+insertPointI: false
+insertPointD: true
+idD: 1381
+da: 1.31255
+db: 0.543997
+Indices: 1381 1203 1201 1211
+-----------------------------------Shared vertex: 1279
+Index p1a:1281
 Coor:  (49.8347, 49.3075, 0)
-Index p1b:1310
+Index p1b:1283
 Coor:  (49.8347, 50.3266, 0)
-Index p2a:1317
+Index p2a:1285
 Coor:  (48.8157, 50.3266, 0)
-Index p2b:1319
+Index p2b:1289
 Coor:  (48.8157, 49.3075, 0)
------------------------------------Shared vertex: 1096
-Index p1a:1321
+isVertical:false
+dir: 1 0 0
+n: -0 1 0
+I: 49.3252 50.5171 0
+D: 49.3252 49.117 0
+insertPointI: false
+insertPointD: true
+idD: 1382
+da: 1.31255
+db: 0.543997
+Indices: 1382 1281 1279 1289
+-----------------------------------Shared vertex: 1093
+Index p1a:1291
 Coor:  (35.4231, 56.7317, 0)
-Index p1b:1323
+Index p1b:1097
 Coor:  (35.4231, 55.7127, 0)
-Index p2a:1326
+Index p2a:1095
 Coor:  (34.4041, 55.7127, 0)
-Index p2b:1328
+Index p2b:1296
 Coor:  (34.4041, 56.7317, 0)
------------------------------------Shared vertex: 1086
-Index p1a:1346
+isVertical:false
+dir: 1 0 0
+n: -0 1 0
+I: 34.9136 56.9223 0
+D: 34.9136 55.5221 0
+insertPointI: true
+insertPointD: false
+idI: 1383
+da: 0.543997
+db: 1.31255
+Indices: 1383 1291 1093 1296
+-----------------------------------Shared vertex: 1083
+Index p1a:1085
 Coor:  (21.5937, 65.3204, 0)
-Index p1b:1348
+Index p1b:1111
 Coor:  (21.5937, 66.3395, 0)
-Index p2a:1350
+Index p2a:1109
 Coor:  (22.6128, 66.3395, 0)
-Index p2b:1352
+Index p2b:1087
 Coor:  (22.6128, 65.3204, 0)
+isVertical:false
+dir: -1 0 0
+n: -0 -1 0
+I: 22.1032 65.1299 0
+D: 22.1032 66.5301 0
+insertPointI: false
+insertPointD: false
+da: 0.543997
+db: 1.31255
 ============================================================
 END
 ============================================================
