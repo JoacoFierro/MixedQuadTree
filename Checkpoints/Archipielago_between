@@ -1,177 +1,593 @@
------------------------------------Shared vertex: 1030
-Index p1a:1032
-Coor:  (9.80244, 18.883, 0)
-Index p1b:1034
-Coor:  (8.78339, 18.883, 0)
-Index p2a:1038
-Coor:  (8.78339, 19.902, 0)
-Index p2b:1042
-Coor:  (9.80244, 19.902, 0)
+-----------------------------------Shared vertex: 2993
+Index p1a:2995
+Coor:  (37.8614, 39.1539, 0)
+Index p1b:2997
+Coor:  (38.3709, 39.1539, 0)
+Index p2a:3298
+Coor:  (38.3709, 39.6634, 0)
+Index p2b:3300
+Coor:  (37.8614, 39.6634, 0)
 isVertical:true
 dir: 0 -1 0
 n: 1 0 0
-I: 9.99301 19.3925 0
-D: 8.59282 19.3925 0
+I: 38.4662 39.4086 0
+D: 37.7661 39.4086 0
 insertPointI: true
-insertPointD: false
-idI: 1378
-da: 0.543997
-db: 1.31255
-Indices: 1378 1032 1030 1042
------------------------------------Shared vertex: 1057
-Index p1a:1059
-Coor:  (16.2076, 37.5162, 0)
-Index p1b:1061
-Coor:  (15.1886, 37.5162, 0)
-Index p2a:1063
-Coor:  (15.1886, 36.4972, 0)
-Index p2b:1065
-Coor:  (16.2076, 36.4972, 0)
+insertPointD: true
+idI: 4014
+idD: 4015
+da: 0.656277
+db: 0.271999
+Indices: 4015 2995 2993 3300
+Indices: 4014 3298 2993 2997
+-----------------------------------Shared vertex: 2998
+Index p1a:3000
+Coor:  (12.7503, 18.8466, 0)
+Index p1b:3002
+Coor:  (12.2407, 18.8466, 0)
+Index p2a:3117
+Coor:  (12.2407, 18.3371, 0)
+Index p2b:3119
+Coor:  (12.7503, 18.3371, 0)
 isVertical:true
 dir: 0 1 0
 n: -1 0 0
-I: 14.998 37.0067 0
-D: 16.3982 37.0067 0
+I: 12.1455 18.5919 0
+D: 12.8455 18.5919 0
 insertPointI: false
 insertPointD: false
-da: 1.31255
-db: 0.543997
------------------------------------Shared vertex: 1083
-Index p1a:1085
-Coor:  (21.5937, 65.3204, 0)
-Index p1b:1087
-Coor:  (22.6128, 65.3204, 0)
-Index p2a:1109
-Coor:  (22.6128, 66.3395, 0)
-Index p2b:1111
-Coor:  (21.5937, 66.3395, 0)
+da: 0.656277
+db: 0.271999
+-----------------------------------Shared vertex: 3013
+Index p1a:3015
+Coor:  (50.3806, 51.1636, 0)
+Index p1b:3017
+Coor:  (50.3806, 51.6731, 0)
+Index p2a:3326
+Coor:  (49.8711, 51.6731, 0)
+Index p2b:3328
+Coor:  (49.8711, 51.1636, 0)
+isVertical:false
+dir: 1 0 0
+n: -0 1 0
+I: 50.1259 51.7684 0
+D: 50.1259 51.0683 0
+insertPointI: true
+insertPointD: true
+idI: 4016
+idD: 4017
+da: 0.656277
+db: 0.271999
+Indices: 4017 3015 3013 3328
+Indices: 4016 3326 3013 3017
+-----------------------------------Shared vertex: 3037
+Index p1a:3039
+Coor:  (9.54768, 19.1377, 0)
+Index p1b:3041
+Coor:  (9.03815, 19.1377, 0)
+Index p2a:3045
+Coor:  (9.03815, 19.6473, 0)
+Index p2b:3049
+Coor:  (9.54768, 19.6473, 0)
 isVertical:true
-dir: -6.97256e-15 -1 0
-n: 1 -6.97256e-15 0
-I: 22.8033 65.83 0
-D: 21.4032 65.83 0
-insertPointI: false
-insertPointD: false
-da: 1.31255
-db: 0.543997
------------------------------------Shared vertex: 1140
-Index p1a:1141
-Coor:  (13.5873, 18.3007, 0)
-Index p1b:1143
-Coor:  (13.5873, 17.2817, 0)
-Index p2a:1152
-Coor:  (14.6063, 17.2817, 0)
-Index p2b:1154
-Coor:  (14.6063, 18.3007, 0)
-isVertical:false
-dir: -1 3.48628e-15 0
-n: -3.48628e-15 -1 0
-I: 14.0968 17.0911 0
-D: 14.0968 18.4913 0
-insertPointI: true
-insertPointD: true
-idI: 1379
-idD: 1380
-da: 1.31255
-db: 0.543997
-Indices: 1380 1141 1140 1154
-Indices: 1379 1152 1140 1143
------------------------------------Shared vertex: 1057
-Index p1a:1059
-Coor:  (16.2076, 37.5162, 0)
-Index p1b:1065
-Coor:  (16.2076, 36.4972, 0)
-Index p2a:1063
-Coor:  (15.1886, 36.4972, 0)
-Index p2b:1061
-Coor:  (15.1886, 37.5162, 0)
-isVertical:false
-dir: 1 0 0
-n: -0 1 0
-I: 15.6981 37.7068 0
-D: 15.6981 36.3066 0
-insertPointI: false
-insertPointD: false
-da: 0.543997
-db: 1.31255
------------------------------------Shared vertex: 1201
-Index p1a:1203
-Coor:  (11.4037, 49.3075, 0)
-Index p1b:1205
-Coor:  (11.4037, 50.3266, 0)
-Index p2a:1209
-Coor:  (10.3847, 50.3266, 0)
-Index p2b:1211
-Coor:  (10.3847, 49.3075, 0)
-isVertical:false
-dir: 1 0 0
-n: -0 1 0
-I: 10.8942 50.5171 0
-D: 10.8942 49.117 0
-insertPointI: false
-insertPointD: true
-idD: 1381
-da: 1.31255
-db: 0.543997
-Indices: 1381 1203 1201 1211
------------------------------------Shared vertex: 1279
-Index p1a:1281
-Coor:  (49.8347, 49.3075, 0)
-Index p1b:1283
-Coor:  (49.8347, 50.3266, 0)
-Index p2a:1285
-Coor:  (48.8157, 50.3266, 0)
-Index p2b:1289
-Coor:  (48.8157, 49.3075, 0)
-isVertical:false
-dir: 1 0 0
-n: -0 1 0
-I: 49.3252 50.5171 0
-D: 49.3252 49.117 0
-insertPointI: false
-insertPointD: true
-idD: 1382
-da: 1.31255
-db: 0.543997
-Indices: 1382 1281 1279 1289
------------------------------------Shared vertex: 1093
-Index p1a:1291
-Coor:  (35.4231, 56.7317, 0)
-Index p1b:1097
-Coor:  (35.4231, 55.7127, 0)
-Index p2a:1095
-Coor:  (34.4041, 55.7127, 0)
-Index p2b:1296
-Coor:  (34.4041, 56.7317, 0)
-isVertical:false
-dir: 1 0 0
-n: -0 1 0
-I: 34.9136 56.9223 0
-D: 34.9136 55.5221 0
+dir: 0 -1 0
+n: 1 0 0
+I: 9.64296 19.3925 0
+D: 8.94287 19.3925 0
 insertPointI: true
 insertPointD: false
-idI: 1383
-da: 0.543997
-db: 1.31255
-Indices: 1383 1291 1093 1296
------------------------------------Shared vertex: 1083
-Index p1a:1085
-Coor:  (21.5937, 65.3204, 0)
-Index p1b:1111
-Coor:  (21.5937, 66.3395, 0)
-Index p2a:1109
-Coor:  (22.6128, 66.3395, 0)
-Index p2b:1087
-Coor:  (22.6128, 65.3204, 0)
+idI: 4018
+da: 0.271999
+db: 0.656277
+Indices: 4018 3039 3037 3049
+-----------------------------------Shared vertex: 3065
+Index p1a:3066
+Coor:  (34.6588, 55.1668, 0)
+Index p1b:3068
+Coor:  (35.1683, 55.1668, 0)
+Index p2a:3359
+Coor:  (35.1683, 55.6763, 0)
+Index p2b:3361
+Coor:  (34.6588, 55.6763, 0)
+isVertical:true
+dir: 0 -1 0
+n: 1 0 0
+I: 35.2636 55.4216 0
+D: 34.5635 55.4216 0
+insertPointI: false
+insertPointD: true
+idD: 4019
+da: 0.656277
+db: 0.271999
+Indices: 4019 3066 3065 3361
+-----------------------------------Shared vertex: 3121
+Index p1a:3123
+Coor:  (11.149, 18.8466, 0)
+Index p1b:3125
+Coor:  (10.6394, 18.8466, 0)
+Index p2a:3128
+Coor:  (10.6394, 18.3371, 0)
+Index p2b:3130
+Coor:  (11.149, 18.3371, 0)
+isVertical:true
+dir: 0 1 0
+n: -1 0 0
+I: 10.5442 18.5919 0
+D: 11.2443 18.5919 0
+insertPointI: false
+insertPointD: false
+da: 0.656277
+db: 0.271999
+-----------------------------------Shared vertex: 3132
+Index p1a:3134
+Coor:  (14.3516, 18.8466, 0)
+Index p1b:3136
+Coor:  (13.842, 18.8466, 0)
+Index p2a:3144
+Coor:  (13.842, 18.3371, 0)
+Index p2b:3145
+Coor:  (14.3516, 18.3371, 0)
+isVertical:true
+dir: 0 1 0
+n: -1 0 0
+I: 13.7467 18.5919 0
+D: 14.4468 18.5919 0
+insertPointI: true
+insertPointD: false
+idI: 4020
+da: 0.656277
+db: 0.271999
+Indices: 4020 3144 3132 3136
+-----------------------------------Shared vertex: 3146
+Index p1a:3148
+Coor:  (18.3548, 23.9416, 0)
+Index p1b:3150
+Coor:  (18.3548, 24.4511, 0)
+Index p2a:3159
+Coor:  (17.8453, 24.4511, 0)
+Index p2b:3161
+Coor:  (17.8453, 23.9416, 0)
+isVertical:false
+dir: 1 0 0
+n: -0 1 0
+I: 18.1 24.5464 0
+D: 18.1 23.8463 0
+insertPointI: true
+insertPointD: false
+idI: 4021
+da: 0.656277
+db: 0.271999
+Indices: 4021 3159 3146 3150
+-----------------------------------Shared vertex: 3179
+Index p1a:3180
+Coor:  (24.76, 23.9416, 0)
+Index p1b:3182
+Coor:  (24.76, 24.4511, 0)
+Index p2a:3184
+Coor:  (24.2504, 24.4511, 0)
+Index p2b:3186
+Coor:  (24.2504, 23.9416, 0)
+isVertical:false
+dir: 1 0 0
+n: -0 1 0
+I: 24.5052 24.5464 0
+D: 24.5052 23.8463 0
+insertPointI: true
+insertPointD: false
+idI: 4022
+da: 0.656277
+db: 0.271999
+Indices: 4022 3184 3179 3182
+-----------------------------------Shared vertex: 3250
+Index p1a:3251
+Coor:  (20.2472, 48.7616, 0)
+Index p1b:3253
+Coor:  (20.7567, 48.7616, 0)
+Index p2a:3265
+Coor:  (20.7567, 49.2712, 0)
+Index p2b:3267
+Coor:  (20.2472, 49.2712, 0)
+isVertical:true
+dir: 0 -1 0
+n: 1 0 0
+I: 20.852 49.0164 0
+D: 20.1519 49.0164 0
+insertPointI: false
+insertPointD: false
+da: 0.656277
+db: 0.271999
+-----------------------------------Shared vertex: 1224
+Index p1a:3264
+Coor:  (20.7567, 49.5623, 0)
+Index p1b:3266
+Coor:  (20.2472, 49.5623, 0)
+Index p2a:3270
+Coor:  (20.2472, 50.0718, 0)
+Index p2b:3274
+Coor:  (20.7567, 50.0718, 0)
+isVertical:true
+dir: 0 -1 0
+n: 1 0 0
+I: 20.852 49.817 0
+D: 20.1519 49.817 0
+insertPointI: true
+insertPointD: false
+idI: 4023
+da: 0.271999
+db: 0.656277
+Indices: 4023 3264 1224 3274
+-----------------------------------Shared vertex: 3276
+Index p1a:3278
+Coor:  (30.3645, 63.6828, 0)
+Index p1b:3280
+Coor:  (29.8549, 63.6828, 0)
+Index p2a:3282
+Coor:  (29.8549, 63.1733, 0)
+Index p2b:3284
+Coor:  (30.3645, 63.1733, 0)
+isVertical:true
+dir: 0 1 0
+n: -1 0 0
+I: 29.7597 63.428 0
+D: 30.4598 63.428 0
+insertPointI: false
+insertPointD: false
+da: 0.656277
+db: 0.271999
+-----------------------------------Shared vertex: 3319
+Index p1a:3321
+Coor:  (50.3806, 49.5623, 0)
+Index p1b:3323
+Coor:  (50.3806, 50.0718, 0)
+Index p2a:3345
+Coor:  (49.8711, 50.0718, 0)
+Index p2b:3346
+Coor:  (49.8711, 49.5623, 0)
+isVertical:false
+dir: 1 0 0
+n: -0 1 0
+I: 50.1259 50.1671 0
+D: 50.1259 49.467 0
+insertPointI: false
+insertPointD: true
+idD: 4024
+da: 0.656277
+db: 0.271999
+Indices: 4024 3321 3319 3346
+-----------------------------------Shared vertex: 3330
+Index p1a:3332
+Coor:  (48.2698, 50.0718, 0)
+Index p1b:3334
+Coor:  (48.2698, 49.5623, 0)
+Index p2a:3341
+Coor:  (48.7793, 49.5623, 0)
+Index p2b:3343
+Coor:  (48.7793, 50.0718, 0)
 isVertical:false
 dir: -1 0 0
 n: -0 -1 0
-I: 22.1032 65.1299 0
-D: 22.1032 66.5301 0
+I: 48.5246 49.467 0
+D: 48.5246 50.1671 0
+insertPointI: true
+insertPointD: false
+idI: 4025
+da: 0.656277
+db: 0.271999
+Indices: 4025 3341 3330 3334
+-----------------------------------Shared vertex: 3335
+Index p1a:3337
+Coor:  (49.58, 49.5623, 0)
+Index p1b:3339
+Coor:  (49.0704, 49.5623, 0)
+Index p2a:3342
+Coor:  (49.0704, 50.0718, 0)
+Index p2b:3344
+Coor:  (49.58, 50.0718, 0)
+isVertical:true
+dir: 0 -1 0
+n: 1 0 0
+I: 49.6753 49.817 0
+D: 48.9752 49.817 0
 insertPointI: false
 insertPointD: false
-da: 0.543997
-db: 1.31255
+da: 0.271999
+db: 0.656277
+-----------------------------------Shared vertex: 3335
+Index p1a:3339
+Coor:  (49.0704, 49.5623, 0)
+Index p1b:3342
+Coor:  (49.0704, 50.0718, 0)
+Index p2a:3344
+Coor:  (49.58, 50.0718, 0)
+Index p2b:3337
+Coor:  (49.58, 49.5623, 0)
+isVertical:false
+dir: -1 0 0
+n: -0 -1 0
+I: 49.3252 49.467 0
+D: 49.3252 50.1671 0
+insertPointI: false
+insertPointD: false
+da: 0.271999
+db: 0.656277
+-----------------------------------Shared vertex: 3393
+Index p1a:3395
+Coor:  (21.5574, 65.5752, 0)
+Index p1b:3397
+Coor:  (21.5574, 66.0847, 0)
+Index p2a:3400
+Coor:  (21.0478, 66.0847, 0)
+Index p2b:3402
+Coor:  (21.0478, 65.5752, 0)
+isVertical:false
+dir: 1 0 0
+n: -0 1 0
+I: 21.3026 66.18 0
+D: 21.3026 65.4799 0
+insertPointI: true
+insertPointD: false
+idI: 4026
+da: 0.656277
+db: 0.271999
+Indices: 4026 3400 3393 3397
+-----------------------------------Shared vertex: 3437
+Index p1a:3439
+Coor:  (40.2633, 26.3435, 0)
+Index p1b:3441
+Coor:  (40.7729, 26.3435, 0)
+Index p2a:3461
+Coor:  (40.7729, 26.8531, 0)
+Index p2b:3463
+Coor:  (40.2633, 26.8531, 0)
+isVertical:true
+dir: 0 -1 0
+n: 1 0 0
+I: 40.8682 26.5983 0
+D: 40.1681 26.5983 0
+insertPointI: true
+insertPointD: true
+idI: 4027
+idD: 4028
+da: 0.656277
+db: 0.271999
+Indices: 4028 3439 3437 3463
+Indices: 4027 3461 3437 3441
+-----------------------------------Shared vertex: 2998
+Index p1a:3117
+Coor:  (12.2407, 18.3371, 0)
+Index p1b:3002
+Coor:  (12.2407, 18.8466, 0)
+Index p2a:3000
+Coor:  (12.7503, 18.8466, 0)
+Index p2b:3119
+Coor:  (12.7503, 18.3371, 0)
+isVertical:false
+dir: -1 0 0
+n: -0 -1 0
+I: 12.4955 18.2418 0
+D: 12.4955 18.9419 0
+insertPointI: false
+insertPointD: false
+da: 0.271999
+db: 0.656277
+-----------------------------------Shared vertex: 3474
+Index p1a:3475
+Coor:  (11.9496, 18.3371, 0)
+Index p1b:3476
+Coor:  (11.9496, 18.8466, 0)
+Index p2a:3483
+Coor:  (11.4401, 18.8466, 0)
+Index p2b:3484
+Coor:  (11.4401, 18.3371, 0)
+isVertical:false
+dir: 1 0 0
+n: -0 1 0
+I: 11.6949 18.9419 0
+D: 11.6949 18.2418 0
+insertPointI: false
+insertPointD: true
+idD: 4029
+da: 0.656277
+db: 0.271999
+Indices: 4029 3475 3474 3484
+-----------------------------------Shared vertex: 3121
+Index p1a:3123
+Coor:  (11.149, 18.8466, 0)
+Index p1b:3130
+Coor:  (11.149, 18.3371, 0)
+Index p2a:3128
+Coor:  (10.6394, 18.3371, 0)
+Index p2b:3125
+Coor:  (10.6394, 18.8466, 0)
+isVertical:false
+dir: 1 0 0
+n: -0 1 0
+I: 10.8942 18.9419 0
+D: 10.8942 18.2418 0
+insertPointI: false
+insertPointD: false
+da: 0.271999
+db: 0.656277
+-----------------------------------Shared vertex: 3485
+Index p1a:3486
+Coor:  (10.3483, 18.3371, 0)
+Index p1b:3487
+Coor:  (10.3483, 18.8466, 0)
+Index p2a:3491
+Coor:  (9.8388, 18.8466, 0)
+Index p2b:3493
+Coor:  (9.8388, 18.3371, 0)
+isVertical:false
+dir: 1 0 0
+n: -0 1 0
+I: 10.0936 18.9419 0
+D: 10.0936 18.2418 0
+insertPointI: false
+insertPointD: true
+idD: 4030
+da: 0.656277
+db: 0.271999
+Indices: 4030 3486 3485 3493
+-----------------------------------Shared vertex: 3038
+Index p1a:3040
+Coor:  (9.54768, 18.8466, 0)
+Index p1b:3492
+Coor:  (9.54768, 18.3371, 0)
+Index p2a:3495
+Coor:  (9.03815, 18.3371, 0)
+Index p2b:3042
+Coor:  (9.03815, 18.8466, 0)
+isVertical:false
+dir: 1 0 0
+n: -0 1 0
+I: 9.29291 18.9419 0
+D: 9.29291 18.2418 0
+insertPointI: false
+insertPointD: true
+idD: 4031
+da: 0.271999
+db: 0.656277
+Indices: 4031 3495 3038 3492
+-----------------------------------Shared vertex: 3203
+Index p1a:3205
+Coor:  (26.3612, 31.9481, 0)
+Index p1b:3567
+Coor:  (25.8517, 31.9481, 0)
+Index p2a:3570
+Coor:  (25.8517, 32.4576, 0)
+Index p2b:3207
+Coor:  (26.3612, 32.4576, 0)
+isVertical:true
+dir: 0 -1 0
+n: 1 0 0
+I: 26.4565 32.2028 0
+D: 25.7564 32.2028 0
+insertPointI: false
+insertPointD: true
+idD: 4032
+da: 0.271999
+db: 0.656277
+Indices: 4032 3570 3203 3567
+-----------------------------------Shared vertex: 3602
+Index p1a:3604
+Coor:  (19.4465, 37.5526, 0)
+Index p1b:3606
+Coor:  (19.9561, 37.5526, 0)
+Index p2a:3608
+Coor:  (19.9561, 38.0621, 0)
+Index p2b:3610
+Coor:  (19.4465, 38.0621, 0)
+isVertical:true
+dir: 0 -1 0
+n: 1 0 0
+I: 20.0514 37.8074 0
+D: 19.3513 37.8074 0
+insertPointI: true
+insertPointD: false
+idI: 4033
+da: 0.656277
+db: 0.271999
+Indices: 4033 3608 3602 3606
+-----------------------------------Shared vertex: 3644
+Index p1a:3646
+Coor:  (13.0414, 47.1603, 0)
+Index p1b:3648
+Coor:  (13.5509, 47.1603, 0)
+Index p2a:3651
+Coor:  (13.5509, 47.6699, 0)
+Index p2b:3653
+Coor:  (13.0414, 47.6699, 0)
+isVertical:true
+dir: 0 -1 0
+n: 1 0 0
+I: 13.6462 47.4151 0
+D: 12.9461 47.4151 0
+insertPointI: true
+insertPointD: true
+idI: 4034
+idD: 4035
+da: 0.656277
+db: 0.271999
+Indices: 4035 3646 3644 3653
+Indices: 4034 3651 3644 3648
+-----------------------------------Shared vertex: 3250
+Index p1a:3251
+Coor:  (20.2472, 48.7616, 0)
+Index p1b:3267
+Coor:  (20.2472, 49.2712, 0)
+Index p2a:3265
+Coor:  (20.7567, 49.2712, 0)
+Index p2b:3253
+Coor:  (20.7567, 48.7616, 0)
+isVertical:false
+dir: -1 0 0
+n: -0 -1 0
+I: 20.502 48.6664 0
+D: 20.502 49.3664 0
+insertPointI: false
+insertPointD: false
+da: 0.271999
+db: 0.656277
+-----------------------------------Shared vertex: 3276
+Index p1a:3278
+Coor:  (30.3645, 63.6828, 0)
+Index p1b:3284
+Coor:  (30.3645, 63.1733, 0)
+Index p2a:3282
+Coor:  (29.8549, 63.1733, 0)
+Index p2b:3280
+Coor:  (29.8549, 63.6828, 0)
+isVertical:false
+dir: 1 0 0
+n: -0 1 0
+I: 30.1097 63.7781 0
+D: 30.1097 63.078 0
+insertPointI: false
+insertPointD: false
+da: 0.271999
+db: 0.656277
+-----------------------------------Shared vertex: 3728
+Index p1a:3730
+Coor:  (24.2504, 59.9707, 0)
+Index p1b:3732
+Coor:  (24.76, 59.9707, 0)
+Index p2a:3735
+Coor:  (24.76, 60.4802, 0)
+Index p2b:3737
+Coor:  (24.2504, 60.4802, 0)
+isVertical:true
+dir: 0 -1 0
+n: 1 0 0
+I: 24.8552 60.2254 0
+D: 24.1551 60.2254 0
+insertPointI: true
+insertPointD: true
+idI: 4036
+idD: 4037
+da: 0.656277
+db: 0.271999
+Indices: 4037 3730 3728 3737
+Indices: 4036 3735 3728 3732
+-----------------------------------Shared vertex: 3018
+Index p1a:3020
+Coor:  (50.3806, 44.7584, 0)
+Index p1b:3794
+Coor:  (49.8711, 44.7584, 0)
+Index p2a:3797
+Coor:  (49.8711, 45.2679, 0)
+Index p2b:3022
+Coor:  (50.3806, 45.2679, 0)
+isVertical:true
+dir: 0 -1 0
+n: 1 0 0
+I: 50.4759 45.0132 0
+D: 49.7758 45.0132 0
+insertPointI: false
+insertPointD: true
+idD: 4038
+da: 0.271999
+db: 0.656277
+Indices: 4038 3797 3018 3794
 ============================================================
 END
 ============================================================

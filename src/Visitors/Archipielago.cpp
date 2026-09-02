@@ -233,22 +233,30 @@
 
 
     void Archipielago::createFixTempQuad(const QuadEdge Qedge, const QuadEdge Tedge, 
-                                        unsigned int maxDepth,
                                         unsigned int sharedVertex,
-                                        const Quadrant q){
-
+                                        unsigned int maxDepth,
+                                        const Quadrant q,
+                                        std::ofstream& file){
+        file << "-----------------------------------" << endl;
         unsigned int RefLevelQuad = q.getRefinementLevel();
-
-        unsigned int idp0, idp1
-        if (RefLevelQuad != maxDepth) {
-
-            idp0 = sharedVertex;
+        file <<"Nivel refinamiento Quad: " << RefLevelQuad << endl;
+        file <<"maxDepth: " << maxDepth   << endl;         
+        bool InsertpNew = false;
+        unsigned int idp0, idp1;
+        Point3D p0, p1;
+        if (RefLevelQuad != maxDepth) { 
 
             unsigned int indTp0 = Tedge[0];
             unsigned int indTp1 = Tedge[1];
 
+            file << "indTp0: " << indTp0 << endl;
+            file << "indTp1: " << indTp1 << endl;
+
             unsigned int indQp0 = Qedge[0];
             unsigned int indQp1 = Qedge[1];
+
+            file << "indQp0: " << indQp0 << endl;
+            file << "indQp1: " << indQp1 << endl;
 
             const Point3D Tp0 = (*points)[indTp0].getPoint();
             const Point3D Tp1 = (*points)[indTp1].getPoint();
@@ -256,55 +264,78 @@
             const Point3D Qp0 = (*points)[indQp0].getPoint();
             const Point3D Qp1 = (*points)[indQp1].getPoint();
 
+            file << "Tp0: "<< Tp0.X() <<" " << Tp0.Y()<< " " << Tp0.Z() << endl;
+            file << "Tp1: "<< Tp1.X() <<" " << Tp1.Y()<< " " << Tp1.Z() << endl;
+            file << "Qp0: "<< Qp0.X() <<" " << Qp0.Y()<< " " << Qp0.Z() << endl;
+            file << "Qp1: "<< Qp1.X() <<" " << Qp1.Y()<< " " << Qp1.Z() << endl;
+
             double distT = (Tp1 - Tp0).Norm();
+
+            file << "distT: " << distT << endl;
 
             Point3D dirQ = Qp1 - Qp0;
             dirQ.normalize();
 
+            file << "dirQ: "<< dirQ.X() <<" " << dirQ.Y()<< " " << dirQ.Z() << endl;
+
             unsigned int OppositeIndxQuad = (sharedVertex == indQp0) ? indQp1 : indQp0;
 
-            const Point3D OppQ = (*points)[OppositeIndxQuad].getPoint();
+            file << "OppositeIndxQuad: " << OppositeIndxQuad << endl;
 
-            Point3D toOpp = OppQ - Qp0;
+            const Point3D OppQ = (*points)[OppositeIndxQuad].getPoint();
+            const Point3D sharedP = (*points)[sharedVertex].getPoint();
+
+            file << "OppQ: "<< OppQ.X() <<" " << OppQ.Y()<< " " << OppQ.Z() << endl;
+            file << "sharedP: "<< sharedP.X() <<" " << sharedP.Y()<< " " << sharedP.Z() << endl;
+
+            Point3D toOpp = OppQ - sharedP;
             toOpp.normalize();
 
             if (dirQ.dot(toOpp) < 0.0) {
                 dirQ = -dirQ;
             }
 
-            
+            file << "dirQ: "<< dirQ.X() <<" " << dirQ.Y()<< " " << dirQ.Z() << endl;
 
+            InsertpNew = true;
+            idp0 = sharedVertex;
+            idp1= points->size();
 
-        }
+            p0 = (*points)[idp0].getPoint();
+            p1 = sharedP + dirQ * distT;
 
-
-
-
-            
+            file << "p1: "<< p1.X() <<" " << p1.Y()<< " " << p1.Z() << endl;
 
         } else { //Mismo nivel de refinamiento
             idp0 = Qedge[0];
             idp1 = Qedge[1];
+
+            file << "idp0 " << idp0 << endl;
+            file << "idp1 " << idp1 << endl;
+        
+            p0 = (*points)[idp0].getPoint();
+            p1 = (*points)[idp1].getPoint();
+
+            file << "p0: "<< p0.X() <<" " << p0.Y()<< " " << p0.Z() << endl;
+            file << "p1: "<< p1.X() <<" " << p1.Y()<< " " << p1.Z() << endl;
         }
-
-
-        const Point3D p0 = (*points)[idp0].getPoint();
-        const Point3D p1 = (*points)[idp1].getPoint();
-
+        //Construimos ancho adatable del template
         Point3D dir = p1 - p0;
         double L = dir.Norm();
         double width = 0.45 * L;
 
+        file << "width " << width << endl;
+
+        //Determinamos la direccion donde se situara el template
         dir.normalize();
         Point3D n(-dir.Y(), dir.X(), 0.0);
         n.normalize();
-
         Point3D mid = (p0 + p1) * 0.5;
         Point3D test = mid + n * (0.1 * (p1-p0).Norm());
-        if (q.pointInside(*points, test)) { // Si la normal esta adentro del cuadrante
-            n = -n;
-        }
+        if (q.pointInside(*points, test))n = -n;
 
+        file << "n " << n << endl;
+        //Creamos los puntos del template
         Point3D bevel0a = dir + n;
         Point3D bevel1a = -dir + n;
 
@@ -314,6 +345,10 @@
         Point3D A = p0 + bevel0a*width;
         Point3D C = p1 + bevel1a*width;
 
+        file << "A: "<< A.X() <<" " << A.Y()<< " " << A.Z() << endl;
+        file << "C: "<< C.X() <<" " << C.Y()<< " " << C.Z() << endl;
+
+        //Validamos que existan puntos repetidos
         bool insertPointA  = true;
         bool insertPointC  = true;
         unsigned int idA,idC;
@@ -332,6 +367,9 @@
             if (!insertPointA && !insertPointC)
                 break;
         }
+        file << "insertPointA: "<< (insertPointA? "true" : "false") << endl;
+        file << "insertPointC: "<< (insertPointC? "true" : "false" )<< endl;
+
         bool insertT = true;
         Point3D midt = (A + C) * 0.5;
 
@@ -345,9 +383,11 @@
             }
         }
 
+        file << "1.insertT: "<< (insertT? "true" : "false")<< endl;
+
         for (auto templateEdge:  TemplesAdded){
 
-            QuadEdge e = templateEdge.Qedge;
+            QuadEdge e = templateEdge.edge;
             Point3D p1 = (*points)[e[0]].getPoint();
             Point3D p2 = (*points)[e[1]].getPoint();
 
@@ -363,8 +403,14 @@
                 }
             }
         }
+
+        file << "2.insertT: "<< (insertT? "true" : "false") << endl;
         
         if(insertT){
+
+            if(InsertpNew){
+                points->push_back(MeshPoint(p1));
+            }
 
             if(insertPointA){
                 idA=points->size();
@@ -707,6 +753,9 @@ bool Archipielago::pointInsideTemplate(const Quadrant &q, const Point3D &P) cons
         getTemplatesToFix();
         saveFixInformation("../Checkpoints/archipielago_before_fix.txt");
 
+        const std::string& filenameQ = "../Checkpoints/Archipielago_FixQuads";
+        std::ofstream fileQ(filenameQ);
+
         QuadAliasing qa;
         QuadEdge Qedge1,Qedge2,Quadrant_edge;
         unsigned int sharedVertex;
@@ -716,7 +765,7 @@ bool Archipielago::pointInsideTemplate(const Quadrant &q, const Point3D &P) cons
             const Quadrant &quad = *ToRepair.qQuadrant;
             qa.getAdjacentEdges(quad,sharedVertex,Qedge1,Qedge2); //Obtener 
             Quadrant_edge = SelectEdge(Tedge,Qedge1,Qedge2,sharedVertex);
-            createFixTempQuad(Quadrant_edge,Tedge,sharedVertex,maxDepth,quad);
+            createFixTempQuad(Quadrant_edge,Tedge,sharedVertex,maxDepth,quad,fileQ);
         }
         QuadEdge Tedge1, Tedge2;
         QuadEdge Edge1a,Edge1b,Edge2a,Edge2b;

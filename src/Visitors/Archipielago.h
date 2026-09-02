@@ -92,7 +92,8 @@ namespace Clobscode
             virtual void createFixTempQuad(const QuadEdge Qedge,const QuadEdge Tedge, 
                                         unsigned int maxDepth,
                                         unsigned int sharedVertex,
-                                        const Quadrant q);
+                                        const Quadrant q,
+                                        std::ofstream& file);
 
             virtual void createFixWithTemp(unsigned int sharedPoint,
                               unsigned int p1a,
