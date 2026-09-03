@@ -767,6 +767,7 @@ bool Archipielago::pointInsideTemplate(const Quadrant &q, const Point3D &P) cons
             Quadrant_edge = SelectEdge(Tedge,Qedge1,Qedge2,sharedVertex);
             createFixTempQuad(Quadrant_edge,Tedge,sharedVertex,maxDepth,quad,fileQ);
         }
+        fileQ.close();
         QuadEdge Tedge1, Tedge2;
         QuadEdge Edge1a,Edge1b,Edge2a,Edge2b;
         unsigned int p1a,p1b,p2a,p2b;

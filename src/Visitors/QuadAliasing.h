@@ -90,7 +90,7 @@ namespace Clobscode
 
             virtual void CreateTemplates();
 
-            virtual void createTemplate(const VertexAlias &pinch);
+            virtual void createTemplate(const VertexAlias &pinch, std::ofstream& file);
 
             virtual unsigned int oppositeVertex(const QuadEdge &e, unsigned int shared);
 

@@ -1,0 +1,2744 @@
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 28
+idp1 1529
+p0: 18.9007 38.608 0
+p1: 19.7013 38.608 0
+width 0.360291
+n 0 -1 -0
+A: 19.1554 38.3532 0
+C: 19.4465 38.3532 0
+insertPointA: false
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 69
+idp1 1976
+p0: 38.1162 38.608 0
+p1: 37.3155 38.608 0
+width 0.360291
+n 0 1 -0
+A: 37.8614 38.8628 0
+C: 37.5703 38.8628 0
+insertPointA: false
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 4
+maxDepth: 6
+indTp0: 82
+indTp1: 3008
+indQp0: 82
+indQp1: 187
+Tp0: 12.4955 38.608 0
+Tp1: 13.2961 38.608 0
+Qp0: 12.4955 38.608 0
+Qp1: 12.4955 41.8106 0
+distT: 0.800646
+dirQ: 0 1 0
+OppositeIndxQuad: 187
+OppQ: 12.4955 41.8106 0
+sharedP: 12.4955 38.608 0
+dirQ: 0 1 0
+p1: 12.4955 39.4086 0
+width 0.360291
+n 1 -0 -0
+A: 12.7503 38.8628 0
+C: 12.7503 39.1539 0
+insertPointA: false
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 103
+idp1 2700
+p0: 50.9265 51.4183 0
+p1: 50.9265 52.219 0
+width 0.360291
+n -1 0 0
+A: 50.6717 51.6731 0
+C: 50.6717 51.9642 0
+insertPointA: false
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 103
+idp1 2728
+p0: 50.9265 51.4183 0
+p1: 50.9265 50.6177 0
+width 0.360291
+n -1 -0 -0
+A: 50.6717 51.1636 0
+C: 50.6717 50.8725 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 104
+idp1 2788
+p0: 50.9265 45.0132 0
+p1: 50.9265 45.8138 0
+width 0.360291
+n -1 0 0
+A: 50.6717 45.2679 0
+C: 50.6717 45.559 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 104
+idp1 2795
+p0: 50.9265 45.0132 0
+p1: 50.9265 44.2125 0
+width 0.360291
+n -1 -0 -0
+A: 50.6717 44.7584 0
+C: 50.6717 44.4673 0
+insertPointA: false
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 113
+idp1 1714
+p0: 31.711 70.6338 0
+p1: 31.711 71.4345 0
+width 0.360291
+n -1 0 0
+A: 31.4562 70.8886 0
+C: 31.4562 71.1797 0
+insertPointA: false
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 113
+idp1 1110
+p0: 31.711 70.6338 0
+p1: 31.711 69.8332 0
+width 0.360291
+n -1 -0 -0
+A: 31.4562 70.3791 0
+C: 31.4562 70.088 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 132
+idp1 2164
+p0: 34.9136 6.58216 0
+p1: 34.9136 7.38281 0
+width 0.360291
+n -1 0 0
+A: 34.6588 6.83693 0
+C: 34.6588 7.12804 0
+insertPointA: false
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 132
+idp1 2167
+p0: 34.9136 6.58216 0
+p1: 34.9136 5.78152 0
+width 0.360291
+n -1 -0 -0
+A: 34.6588 6.3274 0
+C: 34.6588 6.03628 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 143
+idp1 1799
+p0: 38.1162 29.0002 0
+p1: 38.1162 29.8009 0
+width 0.360291
+n 1 -0 -0
+A: 38.3709 29.255 0
+C: 38.3709 29.5461 0
+insertPointA: false
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 168
+idp1 2110
+p0: 25.3058 29.0002 0
+p1: 24.5052 29.0002 0
+width 0.360291
+n 0 1 -0
+A: 25.0511 29.255 0
+C: 24.76 29.255 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 4
+maxDepth: 6
+indTp0: 546
+indTp1: 3056
+indQp0: 86
+indQp1: 546
+Tp0: 12.4955 54.6209 0
+Tp1: 13.2961 54.6209 0
+Qp0: 12.4955 51.4183 0
+Qp1: 12.4955 54.6209 0
+distT: 0.800646
+dirQ: 0 1 0
+OppositeIndxQuad: 86
+OppQ: 12.4955 51.4183 0
+sharedP: 12.4955 54.6209 0
+dirQ: -0 -1 -0
+p1: 12.4955 53.8203 0
+width 0.360291
+n 1 0 0
+A: 12.7503 54.3662 0
+C: 12.7503 54.075 0
+insertPointA: false
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 1063
+idp1 1065
+p0: 34.1129 54.6209 0
+p1: 34.1129 53.8203 0
+width 0.360291
+n 1 0 0
+A: 34.3677 54.3662 0
+C: 34.3677 54.075 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 253
+idp1 1106
+p0: 31.711 67.4313 0
+p1: 30.9104 67.4313 0
+width 0.360291
+n -0 -1 0
+A: 31.4562 67.1765 0
+C: 31.1651 67.1765 0
+insertPointA: false
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 281
+idp1 631
+p0: 31.711 8.18345 0
+p1: 32.5116 8.18345 0
+width 0.360291
+n 0 -1 -0
+A: 31.9658 7.92869 0
+C: 32.2569 7.92869 0
+insertPointA: false
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 281
+idp1 633
+p0: 31.711 8.18345 0
+p1: 31.711 8.9841 0
+width 0.360291
+n -1 0 0
+A: 31.4562 8.43822 0
+C: 31.4562 8.72934 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 1118
+idp1 2174
+p0: 30.1097 9.78475 0
+p1: 30.9104 9.78475 0
+width 0.360291
+n 0 -1 -0
+A: 30.3645 9.52998 0
+C: 30.6556 9.52998 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 1118
+idp1 1649
+p0: 30.1097 9.78475 0
+p1: 29.3091 9.78475 0
+width 0.360291
+n -0 -1 0
+A: 29.8549 9.52998 0
+C: 29.5638 9.52998 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 595
+idp1 596
+p0: 26.9071 12.1867 0
+p1: 27.7078 12.1867 0
+width 0.360291
+n -0 1 0
+A: 27.1619 12.4414 0
+C: 27.453 12.4414 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 263
+idp1 594
+p0: 26.9071 12.9873 0
+p1: 27.7078 12.9873 0
+width 0.360291
+n 0 -1 -0
+A: 27.1619 12.7326 0
+C: 27.453 12.7326 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 263
+idp1 715
+p0: 26.9071 12.9873 0
+p1: 26.9071 13.788 0
+width 0.360291
+n -1 0 0
+A: 26.6524 13.2421 0
+C: 26.6524 13.5332 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 271
+idp1 1821
+p0: 22.1032 11.386 0
+p1: 22.1032 12.1867 0
+width 0.360291
+n -1 0 0
+A: 21.8485 11.6408 0
+C: 21.8485 11.9319 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 1291
+idp1 2009
+p0: 33.3123 17.7912 0
+p1: 33.3123 18.5919 0
+width 0.360291
+n 1 -0 -0
+A: 33.5671 18.046 0
+C: 33.5671 18.3371 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 1291
+idp1 2381
+p0: 33.3123 17.7912 0
+p1: 33.3123 16.9906 0
+width 0.360291
+n 1 0 0
+A: 33.5671 17.5364 0
+C: 33.5671 17.2453 0
+insertPointA: false
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 1695
+idp1 2295
+p0: 39.7175 25.7977 0
+p1: 38.9168 25.7977 0
+width 0.360291
+n 0 1 -0
+A: 39.4627 26.0524 0
+C: 39.1716 26.0524 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 1695
+idp1 2476
+p0: 39.7175 25.7977 0
+p1: 40.5181 25.7977 0
+width 0.360291
+n -0 1 0
+A: 39.9722 26.0524 0
+C: 40.2633 26.0524 0
+insertPointA: false
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 1150
+idp1 1617
+p0: 41.3188 27.399 0
+p1: 41.3188 28.1996 0
+width 0.360291
+n -1 0 0
+A: 41.064 27.6537 0
+C: 41.064 27.9448 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 1150
+idp1 2142
+p0: 41.3188 27.399 0
+p1: 41.3188 26.5983 0
+width 0.360291
+n -1 -0 -0
+A: 41.064 27.1442 0
+C: 41.064 26.8531 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 1173
+idp1 1579
+p0: 18.9007 24.1964 0
+p1: 18.9007 23.3957 0
+width 0.360291
+n -1 -0 -0
+A: 18.6459 23.9416 0
+C: 18.6459 23.6505 0
+insertPointA: false
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 324
+idp1 706
+p0: 25.3058 17.7912 0
+p1: 24.5052 17.7912 0
+width 0.360291
+n 0 1 -0
+A: 25.0511 18.046 0
+C: 24.76 18.046 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 732
+idp1 733
+p0: 25.3058 18.5919 0
+p1: 26.1065 18.5919 0
+width 0.360291
+n 0 -1 -0
+A: 25.5606 18.3371 0
+C: 25.8517 18.3371 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 324
+idp1 729
+p0: 25.3058 17.7912 0
+p1: 26.1065 17.7912 0
+width 0.360291
+n -0 1 0
+A: 25.5606 18.046 0
+C: 25.8517 18.046 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 337
+idp1 735
+p0: 26.9071 20.9938 0
+p1: 26.1065 20.9938 0
+width 0.360291
+n 0 1 -0
+A: 26.6524 21.2486 0
+C: 26.3612 21.2486 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 337
+idp1 740
+p0: 26.9071 20.9938 0
+p1: 27.7078 20.9938 0
+width 0.360291
+n -0 1 0
+A: 27.1619 21.2486 0
+C: 27.453 21.2486 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 742
+idp1 745
+p0: 26.9071 21.7944 0
+p1: 26.1065 21.7944 0
+width 0.360291
+n -0 -1 0
+A: 26.6524 21.5397 0
+C: 26.3612 21.5397 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 340
+idp1 755
+p0: 25.3058 24.1964 0
+p1: 26.1065 24.1964 0
+width 0.360291
+n 0 -1 -0
+A: 25.5606 23.9416 0
+C: 25.8517 23.9416 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 340
+idp1 757
+p0: 25.3058 24.1964 0
+p1: 25.3058 24.997 0
+width 0.360291
+n -1 0 0
+A: 25.0511 24.4511 0
+C: 25.0511 24.7423 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 772
+idp1 773
+p0: 20.502 29.8009 0
+p1: 21.3026 29.8009 0
+width 0.360291
+n 0 -1 -0
+A: 20.7567 29.5461 0
+C: 21.0478 29.5461 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 775
+idp1 778
+p0: 20.502 31.4022 0
+p1: 19.7013 31.4022 0
+width 0.360291
+n 0 1 -0
+A: 20.2472 31.657 0
+C: 19.9561 31.657 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 786
+idp1 787
+p0: 26.9071 28.1996 0
+p1: 27.7078 28.1996 0
+width 0.360291
+n -0 1 0
+A: 27.1619 28.4544 0
+C: 27.453 28.4544 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 353
+idp1 785
+p0: 26.9071 29.0002 0
+p1: 27.7078 29.0002 0
+width 0.360291
+n 0 -1 -0
+A: 27.1619 28.7455 0
+C: 27.453 28.7455 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 357
+idp1 794
+p0: 26.9071 32.2028 0
+p1: 26.9071 31.4022 0
+width 0.360291
+n -1 -0 -0
+A: 26.6524 31.9481 0
+C: 26.6524 31.657 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 366
+idp1 811
+p0: 17.2994 35.4054 0
+p1: 17.2994 34.6048 0
+width 0.360291
+n 1 0 0
+A: 17.5541 35.1507 0
+C: 17.5541 34.8595 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 366
+idp1 1536
+p0: 17.2994 35.4054 0
+p1: 17.2994 36.2061 0
+width 0.360291
+n 1 -0 -0
+A: 17.5541 35.6602 0
+C: 17.5541 35.9513 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 1206
+idp1 1537
+p0: 15.6981 37.0067 0
+p1: 16.4987 37.0067 0
+width 0.360291
+n -0 1 0
+A: 15.9528 37.2615 0
+C: 16.244 37.2615 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 1206
+idp1 1538
+p0: 15.6981 37.0067 0
+p1: 15.6981 36.2061 0
+width 0.360291
+n -1 -0 -0
+A: 15.4433 36.7519 0
+C: 15.4433 36.4608 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 872
+idp1 874
+p0: 11.6949 46.6145 0
+p1: 11.6949 45.8138 0
+width 0.360291
+n 1 0 0
+A: 11.9496 46.3597 0
+C: 11.9496 46.0686 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 391
+idp1 871
+p0: 12.4955 46.6145 0
+p1: 12.4955 45.8138 0
+width 0.360291
+n -1 -0 -0
+A: 12.2407 46.3597 0
+C: 12.2407 46.0686 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 864
+idp1 865
+p0: 8.49227 46.6145 0
+p1: 8.49227 45.8138 0
+width 0.360291
+n 1 0 0
+A: 8.74703 46.3597 0
+C: 8.74703 46.0686 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 864
+idp1 869
+p0: 8.49227 46.6145 0
+p1: 8.49227 47.4151 0
+width 0.360291
+n 1 -0 -0
+A: 8.74703 46.8692 0
+C: 8.74703 47.1603 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 393
+idp1 872
+p0: 10.8942 46.6145 0
+p1: 11.6949 46.6145 0
+width 0.360291
+n -0 1 0
+A: 11.149 46.8692 0
+C: 11.4401 46.8692 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 408
+idp1 897
+p0: 30.1097 48.2158 0
+p1: 29.3091 48.2158 0
+width 0.360291
+n -0 -1 0
+A: 29.8549 47.961 0
+C: 29.5638 47.961 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 415
+idp1 913
+p0: 20.502 48.2158 0
+p1: 20.502 47.4151 0
+width 0.360291
+n -1 -0 -0
+A: 20.2472 47.961 0
+C: 20.2472 47.6699 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 415
+idp1 912
+p0: 20.502 48.2158 0
+p1: 21.3026 48.2158 0
+width 0.360291
+n -0 1 0
+A: 20.7567 48.4705 0
+C: 21.0478 48.4705 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 419
+idp1 1762
+p0: 23.7045 48.2158 0
+p1: 23.7045 49.0164 0
+width 0.360291
+n -1 0 0
+A: 23.4498 48.4705 0
+C: 23.4498 48.7616 0
+insertPointA: false
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 419
+idp1 925
+p0: 23.7045 48.2158 0
+p1: 23.7045 47.4151 0
+width 0.360291
+n -1 -0 -0
+A: 23.4498 47.961 0
+C: 23.4498 47.6699 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 424
+idp1 2211
+p0: 23.7045 49.817 0
+p1: 23.7045 50.6177 0
+width 0.360291
+n -1 0 0
+A: 23.4498 50.0718 0
+C: 23.4498 50.3629 0
+insertPointA: false
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 424
+idp1 1762
+p0: 23.7045 49.817 0
+p1: 23.7045 49.0164 0
+width 0.360291
+n -1 -0 -0
+A: 23.4498 49.5623 0
+C: 23.4498 49.2712 0
+insertPointA: false
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 454
+idp1 995
+p0: 30.1097 62.6274 0
+p1: 29.3091 62.6274 0
+width 0.360291
+n 0 1 -0
+A: 29.8549 62.8821 0
+C: 29.5638 62.8821 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 454
+idp1 1000
+p0: 30.1097 62.6274 0
+p1: 30.9104 62.6274 0
+width 0.360291
+n -0 1 0
+A: 30.3645 62.8821 0
+C: 30.6556 62.8821 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 457
+idp1 1009
+p0: 36.5149 41.8106 0
+p1: 37.3155 41.8106 0
+width 0.360291
+n -0 1 0
+A: 36.7696 42.0653 0
+C: 37.0608 42.0653 0
+insertPointA: false
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 457
+idp1 1012
+p0: 36.5149 41.8106 0
+p1: 35.7142 41.8106 0
+width 0.360291
+n 0 1 -0
+A: 36.2601 42.0653 0
+C: 35.969 42.0653 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 1003
+idp1 1006
+p0: 36.5149 39.4086 0
+p1: 35.7142 39.4086 0
+width 0.360291
+n 0 1 -0
+A: 36.2601 39.6634 0
+C: 35.969 39.6634 0
+insertPointA: false
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 459
+idp1 1004
+p0: 36.5149 40.2093 0
+p1: 35.7142 40.2093 0
+width 0.360291
+n -0 -1 0
+A: 36.2601 39.9545 0
+C: 35.969 39.9545 0
+insertPointA: false
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 1246
+idp1 1500
+p0: 33.3123 49.817 0
+p1: 34.1129 49.817 0
+width 0.360291
+n 0 -1 -0
+A: 33.5671 49.5623 0
+C: 33.8582 49.5623 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 1246
+idp1 2042
+p0: 33.3123 49.817 0
+p1: 32.5116 49.817 0
+width 0.360291
+n -0 -1 0
+A: 33.0575 49.5623 0
+C: 32.7664 49.5623 0
+insertPointA: false
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 2761
+idp1 2830
+p0: 49.3252 41.8106 0
+p1: 50.1259 41.8106 0
+width 0.360291
+n -0 1 0
+A: 49.58 42.0653 0
+C: 49.8711 42.0653 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 2761
+idp1 2847
+p0: 49.3252 41.8106 0
+p1: 48.5246 41.8106 0
+width 0.360291
+n 0 1 -0
+A: 49.0704 42.0653 0
+C: 48.7793 42.0653 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 2243
+idp1 2728
+p0: 50.9265 49.817 0
+p1: 50.9265 50.6177 0
+width 0.360291
+n -1 0 0
+A: 50.6717 50.0718 0
+C: 50.6717 50.3629 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 2243
+idp1 2756
+p0: 50.9265 49.817 0
+p1: 50.9265 49.0164 0
+width 0.360291
+n -1 -0 -0
+A: 50.6717 49.5623 0
+C: 50.6717 49.2712 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 485
+idp1 1060
+p0: 33.3123 53.0196 0
+p1: 33.3123 52.219 0
+width 0.360291
+n -1 -0 -0
+A: 33.0575 52.7649 0
+C: 33.0575 52.4737 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 485
+idp1 1059
+p0: 33.3123 53.0196 0
+p1: 34.1129 53.0196 0
+width 0.360291
+n -0 1 0
+A: 33.5671 53.2744 0
+C: 33.8582 53.2744 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 1064
+idp1 1065
+p0: 33.3123 53.8203 0
+p1: 34.1129 53.8203 0
+width 0.360291
+n 0 -1 -0
+A: 33.5671 53.5655 0
+C: 33.8582 53.5655 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 498
+idp1 1091
+p0: 31.711 72.2351 0
+p1: 31.711 73.0358 0
+width 0.360291
+n -1 0 0
+A: 31.4562 72.4899 0
+C: 31.4562 72.781 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 498
+idp1 1714
+p0: 31.711 72.2351 0
+p1: 31.711 71.4345 0
+width 0.360291
+n -1 -0 -0
+A: 31.4562 71.9804 0
+C: 31.4562 71.6892 0
+insertPointA: false
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 5
+maxDepth: 6
+indTp0: 1911
+indTp1: 3393
+indQp0: 543
+indQp1: 1911
+Tp0: 22.1032 65.83 0
+Tp1: 21.3026 65.83 0
+Qp0: 22.1032 64.2287 0
+Qp1: 22.1032 65.83 0
+distT: 0.800646
+dirQ: 0 1 0
+OppositeIndxQuad: 543
+OppQ: 22.1032 64.2287 0
+sharedP: 22.1032 65.83 0
+dirQ: -0 -1 -0
+p1: 22.1032 65.0293 0
+width 0.360291
+n -1 -0 -0
+A: 21.8485 65.5752 0
+C: 21.8485 65.2841 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 5
+maxDepth: 6
+indTp0: 1911
+indTp1: 3393
+indQp0: 1377
+indQp1: 1911
+Tp0: 22.1032 65.83 0
+Tp1: 21.3026 65.83 0
+Qp0: 22.1032 67.4313 0
+Qp1: 22.1032 65.83 0
+distT: 0.800646
+dirQ: 0 -1 0
+OppositeIndxQuad: 1377
+OppQ: 22.1032 67.4313 0
+sharedP: 22.1032 65.83 0
+dirQ: -0 1 -0
+p1: 22.1032 66.6306 0
+width 0.360291
+n -1 0 0
+A: 21.8485 66.0847 0
+C: 21.8485 66.3758 0
+insertPointA: false
+insertPointC: true
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 316
+idp1 1787
+p0: 20.502 12.9873 0
+p1: 21.3026 12.9873 0
+width 0.360291
+n 0 -1 -0
+A: 20.7567 12.7326 0
+C: 21.0478 12.7326 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 127
+idp1 1787
+p0: 22.1032 12.9873 0
+p1: 21.3026 12.9873 0
+width 0.360291
+n -0 -1 0
+A: 21.8485 12.7326 0
+C: 21.5574 12.7326 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 134
+idp1 1644
+p0: 34.9136 3.37958 0
+p1: 34.9136 4.18022 0
+width 0.360291
+n -1 0 0
+A: 34.6588 3.63434 0
+C: 34.6588 3.92546 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 1133
+idp1 1644
+p0: 34.9136 4.98087 0
+p1: 34.9136 4.18022 0
+width 0.360291
+n -1 -0 -0
+A: 34.6588 4.72611 0
+C: 34.6588 4.43499 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 281
+idp1 631
+p0: 31.711 8.18345 0
+p1: 32.5116 8.18345 0
+width 0.360291
+n 0 -1 -0
+A: 31.9658 7.92869 0
+C: 32.2569 7.92869 0
+insertPointA: false
+insertPointC: false
+1.insertT: false
+2.insertT: false
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 282
+idp1 631
+p0: 33.3123 8.18345 0
+p1: 32.5116 8.18345 0
+width 0.360291
+n -0 -1 0
+A: 33.0575 7.92869 0
+C: 32.7664 7.92869 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 132
+idp1 2164
+p0: 34.9136 6.58216 0
+p1: 34.9136 7.38281 0
+width 0.360291
+n -1 0 0
+A: 34.6588 6.83693 0
+C: 34.6588 7.12804 0
+insertPointA: false
+insertPointC: false
+1.insertT: false
+2.insertT: false
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 279
+idp1 2164
+p0: 34.9136 8.18345 0
+p1: 34.9136 7.38281 0
+width 0.360291
+n -1 -0 -0
+A: 34.6588 7.92869 0
+C: 34.6588 7.63757 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 1289
+idp1 2381
+p0: 33.3123 16.1899 0
+p1: 33.3123 16.9906 0
+width 0.360291
+n 1 -0 -0
+A: 33.5671 16.4447 0
+C: 33.5671 16.7358 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 1291
+idp1 2381
+p0: 33.3123 17.7912 0
+p1: 33.3123 16.9906 0
+width 0.360291
+n 1 0 0
+A: 33.5671 17.5364 0
+C: 33.5671 17.2453 0
+insertPointA: false
+insertPointC: false
+1.insertT: false
+2.insertT: false
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 147
+idp1 2476
+p0: 41.3188 25.7977 0
+p1: 40.5181 25.7977 0
+width 0.360291
+n 0 1 -0
+A: 41.064 26.0524 0
+C: 40.7729 26.0524 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 1695
+idp1 2476
+p0: 39.7175 25.7977 0
+p1: 40.5181 25.7977 0
+width 0.360291
+n -0 1 0
+A: 39.9722 26.0524 0
+C: 40.2633 26.0524 0
+insertPointA: false
+insertPointC: false
+1.insertT: false
+2.insertT: false
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 1142
+idp1 1623
+p0: 34.9136 24.1964 0
+p1: 35.7142 24.1964 0
+width 0.360291
+n 0 -1 -0
+A: 35.1683 23.9416 0
+C: 35.4595 23.9416 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 1143
+idp1 1623
+p0: 36.5149 24.1964 0
+p1: 35.7142 24.1964 0
+width 0.360291
+n -0 -1 0
+A: 36.2601 23.9416 0
+C: 35.969 23.9416 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 296
+idp1 1802
+p0: 36.5149 27.399 0
+p1: 36.5149 28.1996 0
+width 0.360291
+n 1 -0 -0
+A: 36.7696 27.6537 0
+C: 36.7696 27.9448 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 294
+idp1 1802
+p0: 36.5149 29.0002 0
+p1: 36.5149 28.1996 0
+width 0.360291
+n 1 0 0
+A: 36.7696 28.7455 0
+C: 36.7696 28.4544 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 143
+idp1 1799
+p0: 38.1162 29.0002 0
+p1: 38.1162 29.8009 0
+width 0.360291
+n 1 -0 -0
+A: 38.3709 29.255 0
+C: 38.3709 29.5461 0
+insertPointA: false
+insertPointC: false
+1.insertT: false
+2.insertT: false
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 297
+idp1 1799
+p0: 38.1162 30.6015 0
+p1: 38.1162 29.8009 0
+width 0.360291
+n 1 0 0
+A: 38.3709 30.3468 0
+C: 38.3709 30.0557 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 1154
+idp1 1975
+p0: 38.1162 37.0067 0
+p1: 38.1162 37.8074 0
+width 0.360291
+n 1 -0 -0
+A: 38.3709 37.2615 0
+C: 38.3709 37.5526 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 69
+idp1 1975
+p0: 38.1162 38.608 0
+p1: 38.1162 37.8074 0
+width 0.360291
+n 1 0 0
+A: 38.3709 38.3532 0
+C: 38.3709 38.0621 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 69
+idp1 1976
+p0: 38.1162 38.608 0
+p1: 37.3155 38.608 0
+width 0.360291
+n 0 1 -0
+A: 37.8614 38.8628 0
+C: 37.5703 38.8628 0
+insertPointA: false
+insertPointC: false
+1.insertT: false
+2.insertT: false
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 455
+idp1 1976
+p0: 36.5149 38.608 0
+p1: 37.3155 38.608 0
+width 0.360291
+n -0 1 0
+A: 36.7696 38.8628 0
+C: 37.0608 38.8628 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 166
+idp1 1579
+p0: 18.9007 22.5951 0
+p1: 18.9007 23.3957 0
+width 0.360291
+n -1 0 0
+A: 18.6459 22.8498 0
+C: 18.6459 23.141 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 1173
+idp1 1579
+p0: 18.9007 24.1964 0
+p1: 18.9007 23.3957 0
+width 0.360291
+n -1 -0 -0
+A: 18.6459 23.9416 0
+C: 18.6459 23.6505 0
+insertPointA: false
+insertPointC: false
+1.insertT: false
+2.insertT: false
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 705
+idp1 708
+p0: 25.3058 16.9906 0
+p1: 24.5052 16.9906 0
+width 0.360291
+n -0 -1 0
+A: 25.0511 16.7358 0
+C: 24.76 16.7358 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 707
+idp1 708
+p0: 23.7045 16.9906 0
+p1: 24.5052 16.9906 0
+width 0.360291
+n 0 -1 -0
+A: 23.9593 16.7358 0
+C: 24.2504 16.7358 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 78
+idp1 732
+p0: 25.3058 19.3925 0
+p1: 25.3058 18.5919 0
+width 0.360291
+n -1 -0 -0
+A: 25.0511 19.1377 0
+C: 25.0511 18.8466 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 325
+idp1 1585
+p0: 23.7045 19.3925 0
+p1: 24.5052 19.3925 0
+width 0.360291
+n 0 -1 -0
+A: 23.9593 19.1377 0
+C: 24.2504 19.1377 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 78
+idp1 1585
+p0: 25.3058 19.3925 0
+p1: 24.5052 19.3925 0
+width 0.360291
+n -0 -1 0
+A: 25.0511 19.1377 0
+C: 24.76 19.1377 0
+insertPointA: false
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 738
+idp1 741
+p0: 27.7078 19.3925 0
+p1: 27.7078 20.1931 0
+width 0.360291
+n 1 -0 -0
+A: 27.9625 19.6473 0
+C: 27.9625 19.9384 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 740
+idp1 741
+p0: 27.7078 20.9938 0
+p1: 27.7078 20.1931 0
+width 0.360291
+n 1 0 0
+A: 27.9625 20.739 0
+C: 27.9625 20.4479 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 160
+idp1 739
+p0: 28.5084 19.3925 0
+p1: 28.5084 20.1931 0
+width 0.360291
+n -1 0 0
+A: 28.2537 19.6473 0
+C: 28.2537 19.9384 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 334
+idp1 739
+p0: 28.5084 20.9938 0
+p1: 28.5084 20.1931 0
+width 0.360291
+n -1 -0 -0
+A: 28.2537 20.739 0
+C: 28.2537 20.4479 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 351
+idp1 772
+p0: 20.502 30.6015 0
+p1: 20.502 29.8009 0
+width 0.360291
+n -1 -0 -0
+A: 20.2472 30.3468 0
+C: 20.2472 30.0557 0
+insertPointA: false
+insertPointC: false
+1.insertT: false
+2.insertT: false
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 350
+idp1 774
+p0: 18.9007 30.6015 0
+p1: 19.7013 30.6015 0
+width 0.360291
+n 0 -1 -0
+A: 19.1554 30.3468 0
+C: 19.4465 30.3468 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 351
+idp1 774
+p0: 20.502 30.6015 0
+p1: 19.7013 30.6015 0
+width 0.360291
+n -0 -1 0
+A: 20.2472 30.3468 0
+C: 19.9561 30.3468 0
+insertPointA: false
+insertPointC: false
+1.insertT: false
+2.insertT: false
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 350
+idp1 777
+p0: 18.9007 30.6015 0
+p1: 18.9007 31.4022 0
+width 0.360291
+n -1 0 0
+A: 18.6459 30.8563 0
+C: 18.6459 31.1474 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 80
+idp1 777
+p0: 18.9007 32.2028 0
+p1: 18.9007 31.4022 0
+width 0.360291
+n -1 -0 -0
+A: 18.6459 31.9481 0
+C: 18.6459 31.657 0
+insertPointA: false
+insertPointC: false
+1.insertT: false
+2.insertT: false
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 355
+idp1 786
+p0: 26.9071 27.399 0
+p1: 26.9071 28.1996 0
+width 0.360291
+n -1 0 0
+A: 26.6524 27.6537 0
+C: 26.6524 27.9448 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 172
+idp1 2092
+p0: 28.5084 32.2028 0
+p1: 28.5084 33.0035 0
+width 0.360291
+n -1 0 0
+A: 28.2537 32.4576 0
+C: 28.2537 32.7487 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 360
+idp1 2092
+p0: 28.5084 33.8041 0
+p1: 28.5084 33.0035 0
+width 0.360291
+n -1 -0 -0
+A: 28.2537 33.5494 0
+C: 28.2537 33.2582 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 363
+idp1 796
+p0: 26.9071 33.8041 0
+p1: 27.7078 33.8041 0
+width 0.360291
+n 0 -1 -0
+A: 27.1619 33.5494 0
+C: 27.453 33.5494 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 360
+idp1 796
+p0: 28.5084 33.8041 0
+p1: 27.7078 33.8041 0
+width 0.360291
+n -0 -1 0
+A: 28.2537 33.5494 0
+C: 27.9625 33.5494 0
+insertPointA: false
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 80
+idp1 806
+p0: 18.9007 32.2028 0
+p1: 18.9007 33.0035 0
+width 0.360291
+n 1 -0 -0
+A: 19.1554 32.4576 0
+C: 19.1554 32.7487 0
+insertPointA: false
+insertPointC: false
+1.insertT: false
+2.insertT: false
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 365
+idp1 806
+p0: 18.9007 33.8041 0
+p1: 18.9007 33.0035 0
+width 0.360291
+n 1 0 0
+A: 19.1554 33.5494 0
+C: 19.1554 33.2582 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 1197
+idp1 2078
+p0: 23.7045 35.4054 0
+p1: 24.5052 35.4054 0
+width 0.360291
+n 0 -1 -0
+A: 23.9593 35.1507 0
+C: 24.2504 35.1507 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 176
+idp1 2078
+p0: 25.3058 35.4054 0
+p1: 24.5052 35.4054 0
+width 0.360291
+n -0 -1 0
+A: 25.0511 35.1507 0
+C: 24.76 35.1507 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 28
+idp1 1529
+p0: 18.9007 38.608 0
+p1: 19.7013 38.608 0
+width 0.360291
+n 0 -1 -0
+A: 19.1554 38.3532 0
+C: 19.4465 38.3532 0
+insertPointA: false
+insertPointC: false
+1.insertT: false
+2.insertT: false
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 1211
+idp1 1529
+p0: 20.502 38.608 0
+p1: 19.7013 38.608 0
+width 0.360291
+n -0 -1 0
+A: 20.2472 38.3532 0
+C: 19.9561 38.3532 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 381
+idp1 841
+p0: 17.2994 43.4119 0
+p1: 17.2994 44.2125 0
+width 0.360291
+n 1 -0 -0
+A: 17.5541 43.6666 0
+C: 17.5541 43.9578 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 379
+idp1 841
+p0: 17.2994 45.0132 0
+p1: 17.2994 44.2125 0
+width 0.360291
+n 1 0 0
+A: 17.5541 44.7584 0
+C: 17.5541 44.4673 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 379
+idp1 842
+p0: 17.2994 45.0132 0
+p1: 16.4987 45.0132 0
+width 0.360291
+n 0 1 -0
+A: 17.0446 45.2679 0
+C: 16.7535 45.2679 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 186
+idp1 842
+p0: 15.6981 45.0132 0
+p1: 16.4987 45.0132 0
+width 0.360291
+n -0 1 0
+A: 15.9528 45.2679 0
+C: 16.244 45.2679 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 1327
+idp1 1431
+p0: 14.0968 46.6145 0
+p1: 13.2961 46.6145 0
+width 0.360291
+n 0 1 -0
+A: 13.842 46.8692 0
+C: 13.5509 46.8692 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 391
+idp1 1431
+p0: 12.4955 46.6145 0
+p1: 13.2961 46.6145 0
+width 0.360291
+n -0 1 0
+A: 12.7503 46.8692 0
+C: 13.0414 46.8692 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 394
+idp1 2073
+p0: 9.29291 49.817 0
+p1: 9.29291 50.6177 0
+width 0.360291
+n -1 0 0
+A: 9.03815 50.0718 0
+C: 9.03815 50.3629 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 191
+idp1 2073
+p0: 9.29291 51.4183 0
+p1: 9.29291 50.6177 0
+width 0.360291
+n -1 -0 -0
+A: 9.03815 51.1636 0
+C: 9.03815 50.8725 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 881
+idp1 887
+p0: 24.5052 40.2093 0
+p1: 24.5052 41.0099 0
+width 0.360291
+n -1 0 0
+A: 24.2504 40.4641 0
+C: 24.2504 40.7552 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 1216
+idp1 1523
+p0: 23.7045 43.4119 0
+p1: 23.7045 44.2125 0
+width 0.360291
+n -1 0 0
+A: 23.4498 43.6666 0
+C: 23.4498 43.9578 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 418
+idp1 1523
+p0: 23.7045 45.0132 0
+p1: 23.7045 44.2125 0
+width 0.360291
+n -1 -0 -0
+A: 23.4498 44.7584 0
+C: 23.4498 44.4673 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 1191
+idp1 2370
+p0: 26.9071 38.608 0
+p1: 26.9071 39.4086 0
+width 0.360291
+n -1 0 0
+A: 26.6524 38.8628 0
+C: 26.6524 39.1539 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 1332
+idp1 2370
+p0: 26.9071 40.2093 0
+p1: 26.9071 39.4086 0
+width 0.360291
+n -1 -0 -0
+A: 26.6524 39.9545 0
+C: 26.6524 39.6634 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 419
+idp1 1762
+p0: 23.7045 48.2158 0
+p1: 23.7045 49.0164 0
+width 0.360291
+n -1 0 0
+A: 23.4498 48.4705 0
+C: 23.4498 48.7616 0
+insertPointA: false
+insertPointC: false
+1.insertT: false
+2.insertT: false
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 424
+idp1 1762
+p0: 23.7045 49.817 0
+p1: 23.7045 49.0164 0
+width 0.360291
+n -1 -0 -0
+A: 23.4498 49.5623 0
+C: 23.4498 49.2712 0
+insertPointA: false
+insertPointC: false
+1.insertT: false
+2.insertT: false
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 424
+idp1 2211
+p0: 23.7045 49.817 0
+p1: 23.7045 50.6177 0
+width 0.360291
+n -1 0 0
+A: 23.4498 50.0718 0
+C: 23.4498 50.3629 0
+insertPointA: false
+insertPointC: false
+1.insertT: false
+2.insertT: false
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 422
+idp1 2211
+p0: 23.7045 51.4183 0
+p1: 23.7045 50.6177 0
+width 0.360291
+n -1 -0 -0
+A: 23.4498 51.1636 0
+C: 23.4498 50.8725 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 432
+idp1 936
+p0: 23.7045 56.2222 0
+p1: 22.9039 56.2222 0
+width 0.360291
+n -0 -1 0
+A: 23.4498 55.9674 0
+C: 23.1587 55.9674 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 31
+idp1 951
+p0: 31.711 51.4183 0
+p1: 31.711 52.219 0
+width 0.360291
+n 1 -0 -0
+A: 31.9658 51.6731 0
+C: 31.9658 51.9642 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 437
+idp1 951
+p0: 31.711 53.0196 0
+p1: 31.711 52.219 0
+width 0.360291
+n 1 0 0
+A: 31.9658 52.7649 0
+C: 31.9658 52.4737 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 440
+idp1 966
+p0: 31.711 56.2222 0
+p1: 31.711 57.0229 0
+width 0.360291
+n 1 -0 -0
+A: 31.9658 56.477 0
+C: 31.9658 56.7681 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 92
+idp1 966
+p0: 31.711 57.8235 0
+p1: 31.711 57.0229 0
+width 0.360291
+n 1 0 0
+A: 31.9658 57.5687 0
+C: 31.9658 57.2776 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 981
+idp1 988
+p0: 26.9071 58.6241 0
+p1: 27.7078 58.6241 0
+width 0.360291
+n -0 1 0
+A: 27.1619 58.8789 0
+C: 27.453 58.8789 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 986
+idp1 988
+p0: 28.5084 58.6241 0
+p1: 27.7078 58.6241 0
+width 0.360291
+n 0 1 -0
+A: 28.2537 58.8789 0
+C: 27.9625 58.8789 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 449
+idp1 987
+p0: 26.9071 59.4248 0
+p1: 27.7078 59.4248 0
+width 0.360291
+n 0 -1 -0
+A: 27.1619 59.17 0
+C: 27.453 59.17 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 446
+idp1 987
+p0: 28.5084 59.4248 0
+p1: 27.7078 59.4248 0
+width 0.360291
+n -0 -1 0
+A: 28.2537 59.17 0
+C: 27.9625 59.17 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 448
+idp1 1412
+p0: 25.3058 59.4248 0
+p1: 24.5052 59.4248 0
+width 0.360291
+n 0 1 -0
+A: 25.0511 59.6796 0
+C: 24.76 59.6796 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 1339
+idp1 1412
+p0: 23.7045 59.4248 0
+p1: 24.5052 59.4248 0
+width 0.360291
+n -0 1 0
+A: 23.9593 59.6796 0
+C: 24.2504 59.6796 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 455
+idp1 1003
+p0: 36.5149 38.608 0
+p1: 36.5149 39.4086 0
+width 0.360291
+n 1 -0 -0
+A: 36.7696 38.8628 0
+C: 36.7696 39.1539 0
+insertPointA: false
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 1005
+idp1 1006
+p0: 34.9136 39.4086 0
+p1: 35.7142 39.4086 0
+width 0.360291
+n -0 1 0
+A: 35.1683 39.6634 0
+C: 35.4595 39.6634 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 1003
+idp1 1006
+p0: 36.5149 39.4086 0
+p1: 35.7142 39.4086 0
+width 0.360291
+n 0 1 -0
+A: 36.2601 39.6634 0
+C: 35.969 39.6634 0
+insertPointA: false
+insertPointC: false
+1.insertT: false
+2.insertT: false
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 458
+idp1 1004
+p0: 34.9136 40.2093 0
+p1: 35.7142 40.2093 0
+width 0.360291
+n 0 -1 -0
+A: 35.1683 39.9545 0
+C: 35.4595 39.9545 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 459
+idp1 1004
+p0: 36.5149 40.2093 0
+p1: 35.7142 40.2093 0
+width 0.360291
+n -0 -1 0
+A: 36.2601 39.9545 0
+C: 35.969 39.9545 0
+insertPointA: false
+insertPointC: false
+1.insertT: false
+2.insertT: false
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 457
+idp1 1009
+p0: 36.5149 41.8106 0
+p1: 37.3155 41.8106 0
+width 0.360291
+n -0 1 0
+A: 36.7696 42.0653 0
+C: 37.0608 42.0653 0
+insertPointA: false
+insertPointC: false
+1.insertT: false
+2.insertT: false
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 409
+idp1 2042
+p0: 31.711 49.817 0
+p1: 32.5116 49.817 0
+width 0.360291
+n 0 -1 -0
+A: 31.9658 49.5623 0
+C: 32.2569 49.5623 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 1246
+idp1 2042
+p0: 33.3123 49.817 0
+p1: 32.5116 49.817 0
+width 0.360291
+n -0 -1 0
+A: 33.0575 49.5623 0
+C: 32.7664 49.5623 0
+insertPointA: false
+insertPointC: false
+1.insertT: false
+2.insertT: false
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 225
+idp1 2811
+p0: 50.9265 41.8106 0
+p1: 50.9265 42.6112 0
+width 0.360291
+n -1 0 0
+A: 50.6717 42.0653 0
+C: 50.6717 42.3565 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 2633
+idp1 2811
+p0: 50.9265 43.4119 0
+p1: 50.9265 42.6112 0
+width 0.360291
+n -1 -0 -0
+A: 50.6717 43.1571 0
+C: 50.6717 42.866 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 2633
+idp1 2795
+p0: 50.9265 43.4119 0
+p1: 50.9265 44.2125 0
+width 0.360291
+n -1 0 0
+A: 50.6717 43.6666 0
+C: 50.6717 43.9578 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 104
+idp1 2795
+p0: 50.9265 45.0132 0
+p1: 50.9265 44.2125 0
+width 0.360291
+n -1 -0 -0
+A: 50.6717 44.7584 0
+C: 50.6717 44.4673 0
+insertPointA: false
+insertPointC: false
+1.insertT: false
+2.insertT: false
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 103
+idp1 2700
+p0: 50.9265 51.4183 0
+p1: 50.9265 52.219 0
+width 0.360291
+n -1 0 0
+A: 50.6717 51.6731 0
+C: 50.6717 51.9642 0
+insertPointA: false
+insertPointC: false
+1.insertT: false
+2.insertT: false
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 2189
+idp1 2700
+p0: 50.9265 53.0196 0
+p1: 50.9265 52.219 0
+width 0.360291
+n -1 -0 -0
+A: 50.6717 52.7649 0
+C: 50.6717 52.4737 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 1050
+idp1 1056
+p0: 45.322 62.6274 0
+p1: 45.322 63.428 0
+width 0.360291
+n -1 0 0
+A: 45.0672 62.8821 0
+C: 45.0672 63.1733 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 1054
+idp1 1056
+p0: 45.322 64.2287 0
+p1: 45.322 63.428 0
+width 0.360291
+n -1 -0 -0
+A: 45.0672 63.9739 0
+C: 45.0672 63.6828 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 484
+idp1 1063
+p0: 33.3123 54.6209 0
+p1: 34.1129 54.6209 0
+width 0.360291
+n -0 1 0
+A: 33.5671 54.8757 0
+C: 33.8582 54.8757 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 484
+idp1 1064
+p0: 33.3123 54.6209 0
+p1: 33.3123 53.8203 0
+width 0.360291
+n -1 -0 -0
+A: 33.0575 54.3662 0
+C: 33.0575 54.075 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 113
+idp1 1714
+p0: 31.711 70.6338 0
+p1: 31.711 71.4345 0
+width 0.360291
+n -1 0 0
+A: 31.4562 70.8886 0
+C: 31.4562 71.1797 0
+insertPointA: false
+insertPointC: false
+1.insertT: false
+2.insertT: false
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 498
+idp1 1714
+p0: 31.711 72.2351 0
+p1: 31.711 71.4345 0
+width 0.360291
+n -1 -0 -0
+A: 31.4562 71.9804 0
+C: 31.4562 71.6892 0
+insertPointA: false
+insertPointC: false
+1.insertT: false
+2.insertT: false
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 501
+idp1 1106
+p0: 30.1097 67.4313 0
+p1: 30.9104 67.4313 0
+width 0.360291
+n 0 -1 -0
+A: 30.3645 67.1765 0
+C: 30.6556 67.1765 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 253
+idp1 1106
+p0: 31.711 67.4313 0
+p1: 30.9104 67.4313 0
+width 0.360291
+n -0 -1 0
+A: 31.4562 67.1765 0
+C: 31.1651 67.1765 0
+insertPointA: false
+insertPointC: false
+1.insertT: false
+2.insertT: false
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 503
+idp1 1098
+p0: 30.1097 65.83 0
+p1: 30.1097 66.6306 0
+width 0.360291
+n 1 -0 -0
+A: 30.3645 66.0847 0
+C: 30.3645 66.3758 0
+insertPointA: true
+insertPointC: false
+1.insertT: true
+2.insertT: true
+-----------------------------------
+Nivel refinamiento Quad: 6
+maxDepth: 6
+idp0 501
+idp1 1098
+p0: 30.1097 67.4313 0
+p1: 30.1097 66.6306 0
+width 0.360291
+n 1 0 0
+A: 30.3645 67.1765 0
+C: 30.3645 66.8854 0
+insertPointA: false
+insertPointC: false
+1.insertT: true
+2.insertT: true

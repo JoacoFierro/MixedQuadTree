@@ -95,8 +95,12 @@
     }
 
 
-    void QuadAliasing::createTemplate(const VertexAlias &pinch){
+    void QuadAliasing::createTemplate(const VertexAlias &pinch, std::ofstream& file){
+        file << "---------------------" << endl;
         
+        unsigned int LevelQ1 = pinch.q1->getRefinementLevel();
+        unsigned int LevelQ2 = pinch.q2->getRefinementLevel();
+
         unsigned int A = oppositeVertex(pinch.q1_edges[0],pinch.sharedVertex);
         unsigned int B = oppositeVertex(pinch.q1_edges[1],pinch.sharedVertex);
         unsigned int C = oppositeVertex(pinch.q2_edges[0],pinch.sharedVertex);
@@ -125,15 +129,36 @@
         nOB.normalize();
         nOC.normalize();
         nOD.normalize();
-        double L =
-            (PO-PA).Norm()+
-            (PO-PB).Norm()+
-            (PO-PC).Norm()+
-            (PO-PD).Norm();
 
-        L *= 0.25;
+        double L;
+        double width;
+        file <<"sharedVertex: " <<pinch.sharedVertex << endl;
+        file << "LevelQ1: " << LevelQ1 << endl;
+        file << "LevelQ2: " << LevelQ2 << endl;
 
-        double width = 0.45*L;
+        if ( (LevelQ1 - LevelQ2) >= 2 ){
+            L =  (PO-PC).Norm() + (PO-PD).Norm();
+            L *= 0.5;
+
+            width = L / std::sqrt(2.0) * 0.9;
+
+
+        } else if ((LevelQ2 - LevelQ1) >= 2) {
+            L =  (PO-PA).Norm() + (PO-PB).Norm();
+            L *= 0.5;    
+
+            width = L / std::sqrt(2.0) * 0.9;
+        } else {
+            L =(PO-PA).Norm()+
+               (PO-PB).Norm()+
+               (PO-PC).Norm()+
+               (PO-PD).Norm();
+            L *= 0.25;
+
+            width = 0.45*L;
+        }
+
+        
 
         //-----------------------------------------
 
@@ -316,10 +341,10 @@
         unsigned short ref_level2 = 0;
 
         if(InsertA || InsertB){
-            ref_level1 = pinch.q1->getRefinementLevel();
+            ref_level1 = LevelQ1;
         }
         if(InsertC || InsertD){
-            ref_level2 = pinch.q2->getRefinementLevel();
+            ref_level2 = LevelQ2;
         }
 
         //Obtener orden antihorario de los tempaltes
@@ -421,10 +446,13 @@
 }   
 
     void QuadAliasing::CreateTemplates(){
+        const std::string& filename = "../Checkpoints/Pinches_Inserts";
+        std::ofstream file(filename);
         for(VertexAlias pinch: Pinches){
-            createTemplate(pinch);
+            createTemplate(pinch,file);
         }
         cout<< "Templates Pinches Insertados: " << TemplatesInsertados << endl; 
+        file.close();
     }
     
     void QuadAliasing::getPinches(){
